@@ -1,0 +1,15 @@
+{
+  "name": "speedy-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "signaling/server.mjs",
+  "scripts": {
+    "start": "node signaling/server.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
