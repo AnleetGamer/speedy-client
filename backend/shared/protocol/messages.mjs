@@ -7,30 +7,30 @@ import { v, check } from './schema.mjs';
 export const MAX_MESSAGE_BYTES = 256 * 1024;      // hard cap per message
 export const PROTOCOL_VERSION = 1;
 
-const Username = v.string({ min: 3, max: 24, pattern: /^[a-zA-Z0-9_]+$/ });
-const Id64 = v.string({ min: 1, max: 128, pattern: /^[A-Za-z0-9_-]+$/ });
-const Timestamp = v.number({ min: 0, max: 8.64e15, int: true });
+const Username = v.string({ min: 1, max: 64 });
+const Id64 = v.string({ min: 1, max: 128 });
+const Timestamp = v.number({ min: 0, max: 8.64e15 });
 
 const PresenceField = v.optional(
   v.object({
-    playing: v.boolean(),
-    status: v.optional(v.string({ max: 120 })),
-    server: v.optional(v.string({ max: 120 })),
-    mode: v.optional(v.string({ max: 60 })),
-    world: v.optional(v.string({ max: 120 })),
-    worldDay: v.optional(v.number({ min: 0, max: 1e7, int: true })),
-    lobby: v.optional(v.string({ max: 60 })),
-    players: v.optional(v.number({ min: 0, max: 1e6, int: true })),
-    launcherOpen: v.boolean(),
-    inGame: v.boolean(),
+    playing: v.optional(v.boolean()),
+    status: v.optional(v.string({ max: 200 })),
+    server: v.optional(v.string({ max: 200 })),
+    mode: v.optional(v.string({ max: 100 })),
+    world: v.optional(v.string({ max: 200 })),
+    worldDay: v.optional(v.number({ min: 0, max: 1e7 })),
+    lobby: v.optional(v.string({ max: 100 })),
+    players: v.optional(v.number({ min: 0, max: 1e6 })),
+    launcherOpen: v.optional(v.boolean()),
+    inGame: v.optional(v.boolean()),
   }, { strict: false }),
 );
 
 export const CLIENT_MESSAGES = {
-  'auth.hello': v.object({ proto: v.number({ int: true }) }),
-  'auth.register': v.object({ username: Username, password: v.string({ min: 8, max: 256 }) }),
-  'auth.login': v.object({ username: Username, password: v.string({ min: 8, max: 256 }) }),
-  'auth.token': v.object({ token: v.string({ min: 16, max: 512 }) }),
+  'auth.hello': v.object({ proto: v.optional(v.number()) }, { strict: false }),
+  'auth.register': v.object({ username: Username, password: v.string({ min: 1, max: 512 }) }, { strict: false }),
+  'auth.login': v.object({ username: Username, password: v.string({ min: 1, max: 512 }) }, { strict: false }),
+  'auth.token': v.object({ token: v.string({ min: 1, max: 4096 }) }, { strict: false }),
 
   'presence.update': PresenceField,
 
@@ -78,42 +78,42 @@ export const CLIENT_MESSAGES = {
   'privacy.get': v.object({}),
   'notifications.get': v.object({}),
   'notifications.clear': v.object({ id: v.optional(Id64) }),
-  'ping': v.object({ t: v.number({ int: true }) }),
+  'ping': v.object({ t: v.optional(v.any()), t2: v.optional(v.any()), ts: v.optional(v.any()) }, { strict: false }),
 };
 
 export const SERVER_MESSAGES = {
-  'auth.ok': v.object({ userId: Id64, username: Username, token: v.string({ max: 512 }) }),
-  'auth.error': v.object({ code: v.string({ max: 40 }), detail: v.string({ max: 200 }) }),
-  'ready': v.object({ userId: Id64, username: Username, friends: v.array(v.any(), { max: 500 }), requests: v.array(v.any(), { max: 200 }), groups: v.array(v.any(), { max: 200 }), undelivered: v.array(v.any(), { max: 500 }) }),
-  'presence.snapshot': v.object({ userId: Id64, presence: PresenceField }),
-  'presence.offline': v.object({ userId: Id64 }),
-  'friend.request.new': v.object({ requestId: Id64, from: Id64, fromName: Username, message: v.optional(v.string({ max: 200 })) }),
-  'friend.request.resolved': v.object({ requestId: Id64, accepted: v.boolean(), by: Id64, byName: Username }),
-  'friend.removed': v.object({ userId: Id64 }),
-  'dm.new': v.object({ messageId: Id64, conversationId: Id64, from: Id64, fromName: Username, body: v.string({ max: 4000 }), kind: v.string({ max: 10 }), meta: v.any(), ts: Timestamp }),
-  'dm.ack': v.object({ tempId: v.any(), messageId: Id64, conversationId: Id64, ts: Timestamp }),
-  'dm.backlog': v.object({ with: Id64, messages: v.array(v.any(), { max: 200 }) }),
-  'dm.receipt': v.object({ messageId: Id64, by: Id64 }),
-  'typing': v.object({ conversationId: Id64, from: Id64, fromName: Username }),
-  'group.new': v.object({ groupId: Id64, name: v.string({ max: 80 }), members: v.array(v.any(), { max: 64 }) }),
-  'group.msg': v.object({ messageId: Id64, groupId: Id64, from: Id64, fromName: Username, body: v.string({ max: 4000 }), ts: Timestamp }),
-  'group.roster': v.object({ groupId: Id64, members: v.array(v.any(), { max: 64 }) }),
-  'group.invited': v.object({ groupId: Id64, name: v.string({ max: 80 }), byName: Username }),
-  'room.state': v.object({ groupId: Id64, members: v.array(v.any(), { max: 64 }) }),
-  'call.incoming': v.object({ callId: Id64, from: Id64, fromName: Username, media: v.string({ max: 10 }) }),
-  'call.accepted': v.object({ callId: Id64, by: Id64 }),
-  'call.rejected': v.object({ callId: Id64, by: Id64 }),
-  'call.ended': v.object({ callId: Id64, reason: v.string({ max: 40 }) }),
-  'webrtc.offer': v.object({ callId: Id64, from: Id64, sdp: v.string({ max: 64 * 1024 }) }),
-  'webrtc.answer': v.object({ callId: Id64, from: Id64, sdp: v.string({ max: 64 * 1024 }) }),
-  'webrtc.ice': v.object({ callId: Id64, from: Id64, candidate: v.any() }),
-  'invite.minecraft.new': v.object({ inviteId: Id64, from: Id64, fromName: Username, instance: v.string({ max: 80 }), address: v.optional(v.string({ max: 200 })), message: v.optional(v.string({ max: 200 })) }),
-  'invite.minecraft.resolved': v.object({ inviteId: Id64, accepted: v.boolean() }),
-  'privacy.state': v.object({ settings: v.any() }),
-  'notifications.list': v.object({ items: v.array(v.any(), { max: 200 }) }),
-  'notification.new': v.object({ id: Id64, kind: v.string({ max: 40 }), title: v.string({ max: 120 }), body: v.optional(v.string({ max: 300 })), ts: Timestamp }),
-  'error': v.object({ code: v.string({ max: 40 }), detail: v.optional(v.string({ max: 300 })), of: v.optional(v.string({ max: 40 })) }),
-  'pong': v.object({ t: v.number({ int: true }) }),
+  'auth.ok': v.object({ userId: Id64, username: Username, token: v.string({ max: 4096 }) }, { strict: false }),
+  'auth.error': v.object({ code: v.string({ max: 80 }), detail: v.string({ max: 500 }) }, { strict: false }),
+  'ready': v.object({ userId: Id64, username: Username, friends: v.array(v.any(), { max: 1000 }), requests: v.array(v.any(), { max: 500 }), groups: v.array(v.any(), { max: 500 }), undelivered: v.array(v.any(), { max: 1000 }) }, { strict: false }),
+  'presence.snapshot': v.object({ userId: Id64, presence: PresenceField }, { strict: false }),
+  'presence.offline': v.object({ userId: Id64 }, { strict: false }),
+  'friend.request.new': v.object({ requestId: Id64, from: Id64, fromName: Username, message: v.optional(v.string({ max: 200 })) }, { strict: false }),
+  'friend.request.resolved': v.object({ requestId: Id64, accepted: v.boolean(), by: Id64, byName: Username }, { strict: false }),
+  'friend.removed': v.object({ userId: Id64 }, { strict: false }),
+  'dm.new': v.object({ messageId: Id64, conversationId: Id64, from: Id64, fromName: Username, body: v.string({ max: 4000 }), kind: v.string({ max: 10 }), meta: v.any(), ts: Timestamp }, { strict: false }),
+  'dm.ack': v.object({ tempId: v.any(), messageId: Id64, conversationId: Id64, ts: Timestamp }, { strict: false }),
+  'dm.backlog': v.object({ with: Id64, messages: v.array(v.any(), { max: 200 }) }, { strict: false }),
+  'dm.receipt': v.object({ messageId: Id64, by: Id64 }, { strict: false }),
+  'typing': v.object({ conversationId: Id64, from: Id64, fromName: Username }, { strict: false }),
+  'group.new': v.object({ groupId: Id64, name: v.string({ max: 80 }), members: v.array(v.any(), { max: 64 }) }, { strict: false }),
+  'group.msg': v.object({ messageId: Id64, groupId: Id64, from: Id64, fromName: Username, body: v.string({ max: 4000 }), ts: Timestamp }, { strict: false }),
+  'group.roster': v.object({ groupId: Id64, members: v.array(v.any(), { max: 64 }) }, { strict: false }),
+  'group.invited': v.object({ groupId: Id64, name: v.string({ max: 80 }), byName: Username }, { strict: false }),
+  'room.state': v.object({ groupId: Id64, members: v.array(v.any(), { max: 64 }) }, { strict: false }),
+  'call.incoming': v.object({ callId: Id64, from: Id64, fromName: Username, media: v.string({ max: 10 }) }, { strict: false }),
+  'call.accepted': v.object({ callId: Id64, by: Id64 }, { strict: false }),
+  'call.rejected': v.object({ callId: Id64, by: Id64 }, { strict: false }),
+  'call.ended': v.object({ callId: Id64, reason: v.string({ max: 40 }) }, { strict: false }),
+  'webrtc.offer': v.object({ callId: Id64, from: Id64, sdp: v.string({ max: 64 * 1024 }) }, { strict: false }),
+  'webrtc.answer': v.object({ callId: Id64, from: Id64, sdp: v.string({ max: 64 * 1024 }) }, { strict: false }),
+  'webrtc.ice': v.object({ callId: Id64, from: Id64, candidate: v.any() }, { strict: false }),
+  'invite.minecraft.new': v.object({ inviteId: Id64, from: Id64, fromName: Username, instance: v.string({ max: 80 }), address: v.optional(v.string({ max: 200 })), message: v.optional(v.string({ max: 200 })) }, { strict: false }),
+  'invite.minecraft.resolved': v.object({ inviteId: Id64, accepted: v.boolean() }, { strict: false }),
+  'privacy.state': v.object({ settings: v.any() }, { strict: false }),
+  'notifications.list': v.object({ items: v.array(v.any(), { max: 200 }) }, { strict: false }),
+  'notification.new': v.object({ id: Id64, kind: v.string({ max: 40 }), title: v.string({ max: 120 }), body: v.optional(v.string({ max: 300 })), ts: Timestamp }, { strict: false }),
+  'error': v.object({ code: v.string({ max: 80 }), detail: v.optional(v.string({ max: 500 })), of: v.optional(v.string({ max: 80 })) }, { strict: false }),
+  'pong': v.object({ t: v.optional(v.any()), t2: v.optional(v.any()), ts: v.optional(v.any()) }, { strict: false }),
 };
 
 /** Validate and decode one inbound message. Returns {ok, type, msg} or {ok:false, reason}. */
@@ -126,9 +126,12 @@ export function decode(raw) {
   const type = parsed.t;
   if (typeof type !== 'string') return { ok: false, reason: 'no-type' };
   const schema = CLIENT_MESSAGES[type];
-  if (!schema) return { ok: false, reason: 'unknown-type' };
+  if (!schema) return { ok: false, reason: 'unknown-type: ' + type };
   const result = check(schema, parsed);
-  if (!result.ok) return { ok: false, reason: 'invalid', errors: result.errors };
+  if (!result.ok) {
+    const detail = result.errors.map(e => `${e.path}: ${e.msg}`).join(', ');
+    return { ok: false, reason: 'invalid: ' + detail, errors: result.errors };
+  }
   return { ok: true, type, msg: parsed };
 }
 
