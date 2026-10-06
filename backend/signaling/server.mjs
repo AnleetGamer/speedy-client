@@ -586,7 +586,7 @@ attachWebSocketServer(server, {
       } catch (e) {
         console.error('[anleet] handler error', type, e.stack || e.message);
         // Surface typed errors (username-taken, dms-closed, ...) to the client.
-        sendError(conn, e.code || 'server-error', e.code ? e.message : 'Something failed on our side.', type);
+        sendError(conn, e.code || 'server-error', e.message || 'Something failed on our side.', type);
       }
     };
 
