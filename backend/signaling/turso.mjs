@@ -17,11 +17,14 @@ export function createTurso({ url, token, timeoutMs = 8000, retries = 2 }) {
         body: JSON.stringify({ requests: requests.map(toRequest) }),
         signal: ctrl.signal,
       });
-      if (!res.ok) throw new Error(`Turso HTTP ${res.status}`);
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`Turso HTTP ${res.status}: ${errText}`);
+      }
       const body = await res.json();
       return body.results.map((r) => {
-        if (r.type === 'error') throw new Error('Turso: ' + (r.error?.message || 'query error'));
-        return r.response?.result ?? { rows: [] };
+        if (r.type === 'error') throw new Error('Turso: ' + (r.error?.message || JSON.stringify(r.error) || 'query error'));
+        return r.response?.result ?? { rows: [], cols: [] };
       });
     } finally {
       clearTimeout(t);
@@ -59,9 +62,11 @@ function toRequest(stmt) {
     stmt: {
       sql: stmt.sql,
       args: (stmt.args || []).map((a) => {
-        if (a == null) return { type: 'null', value: null };
-        if (typeof a === 'number') return Number.isInteger(a) ? { type: 'integer', value: a } : { type: 'real', value: a };
-        if (typeof a === 'boolean') return { type: 'integer', value: a ? 1 : 0 };
+        if (a == null) return { type: 'null' };
+        if (typeof a === 'number') {
+          return Number.isInteger(a) ? { type: 'integer', value: String(a) } : { type: 'float', value: a };
+        }
+        if (typeof a === 'boolean') return { type: 'integer', value: a ? '1' : '0' };
         return { type: 'text', value: String(a) };
       }),
     },
@@ -70,6 +75,20 @@ function toRequest(stmt) {
 
 /** Rows come back as arrays of {type,value} — convert to plain objects. */
 export function rowsToObjects(result) {
+  if (!result || !result.cols) return [];
   const cols = result.cols.map(c => c.name);
-  return (result.rows || []).map(row => Object.fromEntries(row.map((cell, i) => [cols[i], cell?.value])));
+  return (result.rows || []).map(row => {
+    const obj = {};
+    for (let i = 0; i < cols.length; i++) {
+      const cell = row[i];
+      if (cell == null || cell.type === 'null') {
+        obj[cols[i]] = null;
+      } else if (cell.type === 'integer') {
+        obj[cols[i]] = Number(cell.value);
+      } else {
+        obj[cols[i]] = cell.value;
+      }
+    }
+    return obj;
+  });
 }
