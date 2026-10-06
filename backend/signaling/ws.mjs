@@ -89,7 +89,9 @@ function createParser({ maxPayload, onFrame, onClose }) {
 /** Attach a WebSocket endpoint to an HTTP server. */
 export function attachWebSocketServer(httpServer, { path = '/ws', maxPayload = 256 * 1024, onConnection }) {
   httpServer.on('upgrade', (req, socket) => {
-    if ((req.url || '').split('?')[0] !== path) { socket.destroy(); return; }
+    const reqPath = (req.url || '').split('?')[0];
+    const isAllowedPath = !path || reqPath === path || reqPath === '/' || reqPath === '' || reqPath.startsWith('/ws');
+    if (!isAllowedPath) { socket.destroy(); return; }
     const key = req.headers['sec-websocket-key'];
     if (!key || (req.headers.upgrade || '').toLowerCase() !== 'websocket') { socket.destroy(); return; }
     const accept = crypto.createHash('sha1').update(key + GUID).digest('base64');

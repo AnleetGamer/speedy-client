@@ -515,7 +515,22 @@ async function finishAuth(conn, user) {
 // ---------------------------------------------------------------- server
 const server = http.createServer((req, res) => {
   const url = (req.url || '/').split('?')[0];
-  if (url === '/healthz') { res.writeHead(200, { 'content-type': 'text/plain' }); res.end('ok'); return; }
+  if (url === '/healthz' || url === '/health' || url === '/health-check') {
+    res.writeHead(200, { 'content-type': 'text/plain', 'access-control-allow-origin': '*' });
+    res.end('ok');
+    return;
+  }
+  if (url === '/' || url === '/ws') {
+    res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+    res.end(JSON.stringify({
+      status: 'ok',
+      service: 'speedy-signaling',
+      protocol: PROTOCOL_VERSION,
+      onlineUsers: sessions.size,
+      endpoints: ['/ws', '/']
+    }));
+    return;
+  }
   serveStatic(url, res);
 });
 
