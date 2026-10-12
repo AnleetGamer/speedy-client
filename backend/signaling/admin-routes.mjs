@@ -34,7 +34,9 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
   const url = (req.url || '/').split('?')[0];
   const method = req.method || 'GET';
 
-  // Helper for json responses
+  // Helper for json responses — MUST return true so callers
+  // that do `return json(...)` propagate a truthy value back to
+  // server.mjs, preventing the fall-through to serveStatic.
   function json(status, data) {
     res.writeHead(status, {
       'content-type': 'application/json',
@@ -42,6 +44,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
       'access-control-allow-headers': 'Content-Type, Authorization',
     });
     res.end(JSON.stringify(data));
+    return true;
   }
 
   // Pre-flight CORS

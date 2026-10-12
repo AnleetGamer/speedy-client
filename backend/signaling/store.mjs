@@ -209,6 +209,7 @@ export function createTursoStore({ url, token }) {
     notifsFor: 'SELECT id, kind, title, body, ts FROM notifications WHERE user_id = ? ORDER BY ts DESC LIMIT 100',
     savePrivacy: 'INSERT INTO privacy_settings (user_id, settings) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET settings = excluded.settings',
     getPrivacy: 'SELECT settings FROM privacy_settings WHERE user_id = ?',
+    delNotif: 'DELETE FROM notifications WHERE id = ?',
     insertTelemetry: 'INSERT INTO telemetry_events (id, user_id, device_id, event_type, payload, ts) VALUES (?,?,?,?,?,?)',
     insertError: 'INSERT INTO client_errors (id, user_id, subsystem, message, stack, level, ts) VALUES (?,?,?,?,?,?,?)',
     insertDownload: 'INSERT INTO download_stats (id, user_id, url, size, duration_ms, status, ts) VALUES (?,?,?,?,?,?,?)',
