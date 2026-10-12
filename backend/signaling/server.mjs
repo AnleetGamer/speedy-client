@@ -32,6 +32,7 @@ import { decode, encode, PROTOCOL_VERSION } from '../shared/protocol/messages.mj
 import { createRateLimiter } from '../shared/protocol/schema.mjs';
 import { defaultPrivacy, filterPresence } from '../shared/presence/logic.mjs';
 import { checkImpersonation } from '../shared/safety/impersonation.mjs';
+import { handleAdminAndTelemetry, broadcastAdminEvent } from './admin-routes.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const PREVIEW_DIR = process.env.ANLEET_PREVIEW_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'tools', 'preview');
@@ -95,11 +96,18 @@ async function friendPayloadFor(userId) {
   const friendIds = await store.getFriendIds(userId);
   const out = [];
   for (const fid of friendIds) {
+    if (!fid) continue;
     const user = await store.getUserById(fid);
     if (!user) continue;
     const [theirPrivacy, rawPresence] = await Promise.all([store.getPrivacy(fid), store.getPresence(fid)]);
     const filtered = filterPresence(rawPresence, theirPrivacy ?? defaultPrivacy(), 'friend');
-    out.push({ id: fid, username: user.username, presence: filtered.visible ? filtered.presence : null, canDm: filtered.canDm, canCall: filtered.canCall });
+    out.push({
+      id: fid,
+      username: user.username,
+      presence: filtered.visible && filtered.presence ? filtered.presence : { playing: false, inGame: false, online: sessions.has(fid) },
+      canDm: filtered.canDm ?? true,
+      canCall: filtered.canCall ?? true,
+    });
   }
   return out;
 }
@@ -160,6 +168,7 @@ const handlers = {
     const delivered = await sendTo(target.id, encode('friend.request.new', {
       requestId: req.id, from: ctx.userId, fromName: ctx.username, message: msg.message ?? undefined,
     }));
+    await sendTo(target.id, encode('ready', await readyPayload(target.id)));
     // Lightweight impersonation warning for the receiver (§39).
     const friends = await friendPayloadFor(target.id);
     const imp = checkImpersonation(ctx.username, [...friends.map(f => f.username), target.username]);
@@ -184,13 +193,25 @@ const handlers = {
       await sendTo(req.from, encode('friend.request.resolved', { requestId: req.id, accepted: true, by: ctx.userId, byName: ctx.username }));
       await pushPresenceTo(ctx.userId, req.from);
       await pushPresenceTo(req.from, ctx.userId);
+      const fromReady = await readyPayload(req.from);
+      await sendTo(req.from, encode('ready', fromReady));
+      await sendTo(req.from, JSON.stringify({ t: 'friends', friends: fromReady.friends }));
     }
+    const myReady = await readyPayload(ctx.userId);
+    conn.send(encode('ready', myReady));
+    conn.send(JSON.stringify({ t: 'friends', friends: myReady.friends }));
   },
 
   async 'friend.remove'(conn, msg, ctx) {
     if (!(await store.areFriends(ctx.userId, msg.userId))) return;
     await store.removeFriendship(ctx.userId, msg.userId);
     await sendTo(msg.userId, encode('friend.removed', { userId: ctx.userId }));
+    const targetReady = await readyPayload(msg.userId);
+    await sendTo(msg.userId, encode('ready', targetReady));
+    await sendTo(msg.userId, JSON.stringify({ t: 'friends', friends: targetReady.friends }));
+    const myReady = await readyPayload(ctx.userId);
+    conn.send(encode('ready', myReady));
+    conn.send(JSON.stringify({ t: 'friends', friends: myReady.friends }));
   },
 
   async 'block.add'(conn, msg, ctx) {
@@ -198,7 +219,9 @@ const handlers = {
     if (await store.areFriends(ctx.userId, msg.userId)) {
       await store.removeFriendship(ctx.userId, msg.userId);
       await sendTo(msg.userId, encode('friend.removed', { userId: ctx.userId }));
+      await sendTo(msg.userId, encode('ready', await readyPayload(msg.userId)));
     }
+    conn.send(encode('ready', await readyPayload(ctx.userId)));
   },
   async 'block.remove'(conn, msg, ctx) { await store.removeBlock(ctx.userId, msg.userId); },
   async 'block.list'(conn, _msg, ctx) {
@@ -230,7 +253,8 @@ const handlers = {
   },
 
   async 'dm.backlog'(conn, msg, ctx) {
-    let conv = await store.findDirectConversation(ctx.userId, msg.with);
+    let conv = await store.getConversation(msg.with);
+    if (!conv) conv = await store.findDirectConversation(ctx.userId, msg.with);
     if (!conv) return conn.send(encode('dm.backlog', { with: msg.with, messages: [] }));
     const list = await store.listMessages(conv.id, msg.limit ?? 100);
     conn.send(encode('dm.backlog', { with: msg.with, messages: list }));
@@ -330,7 +354,7 @@ const handlers = {
     if (theirPrivacy.allowCalls === 'friends' && !(await store.areFriends(ctx.userId, msg.to))) {
       return sendError(conn, 'calls-friends-only', 'Only friends can call this person.', 'call.invite');
     }
-    const callId = newId();
+    const callId = msg.callId || newId();
     activeCalls.set(callId, { from: ctx.userId, to: msg.to, media: msg.media, state: 'ringing' });
     const delivered = await sendTo(msg.to, encode('call.incoming', { callId, from: ctx.userId, fromName: ctx.username, media: msg.media }));
     if (!delivered) {
@@ -510,11 +534,32 @@ async function finishAuth(conn, user) {
   // Tell friends we are here (launcher-open presence, no game).
   await store.savePresence(user.id, { playing: false, launcherOpen: true, inGame: false, ts: Date.now() });
   await fanoutPresence(user.id, { playing: false, launcherOpen: true, inGame: false, ts: Date.now() });
+  try { broadcastAdminEvent('presence', { userId: user.id, username: user.username, status: 'online', onlineUsers: sessions.size }); } catch {}
 }
 
 // ---------------------------------------------------------------- server
 const server = http.createServer((req, res) => {
   const url = (req.url || '/').split('?')[0];
+
+  // Admin Dashboard and Ingestion APIs
+  if (url === '/admin') {
+    const adminHtmlPath = path.join(path.dirname(fileURLToPath(import.meta.url)), 'admin-dashboard.html');
+    fs.readFile(adminHtmlPath, (err, data) => {
+      if (err) {
+        res.writeHead(500, { 'content-type': 'text/plain' });
+        res.end('Error loading admin dashboard');
+        return;
+      }
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      res.end(data);
+    });
+    return;
+  }
+
+  if (handleAdminAndTelemetry(req, res, { store, sessions, SECRET })) {
+    return;
+  }
+
   if (url === '/healthz' || url === '/health' || url === '/health-check') {
     res.writeHead(200, { 'content-type': 'text/plain', 'access-control-allow-origin': '*' });
     res.end('ok');
@@ -527,7 +572,7 @@ const server = http.createServer((req, res) => {
       service: 'speedy-signaling',
       protocol: PROTOCOL_VERSION,
       onlineUsers: sessions.size,
-      endpoints: ['/ws', '/']
+      endpoints: ['/ws', '/', '/admin', '/api/telemetry/batch']
     }));
     return;
   }
@@ -599,6 +644,7 @@ attachWebSocketServer(server, {
       if (set && set.size === 0) {
         sessions.delete(ctx.userId);
         ctx.room = null;
+        try { broadcastAdminEvent('presence', { userId: ctx.userId, status: 'offline', onlineUsers: sessions.size }); } catch {}
         // Fail any active calls involving this user — no zombie sessions (§59).
         for (const [callId, call] of activeCalls) {
           if (call.from === ctx.userId || call.to === ctx.userId) {

@@ -126,6 +126,47 @@ export function createMemoryStore() {
       const raw = privacy.get(userId);
       return raw ? JSON.parse(raw) : null;
     },
+    // ---- Telemetry & Admin Store Methods ----
+    async recordTelemetryBatch({ events = [], errors = [], downloads = [] }) {
+      if (!this._telemetryEvents) {
+        this._telemetryEvents = [];
+        this._clientErrors = [];
+        this._downloadStats = [];
+      }
+      const nowTs = Date.now();
+      for (const ev of events) {
+        this._telemetryEvents.push({ id: newId(), ts: ev.ts || nowTs, ...ev });
+      }
+      if (this._telemetryEvents.length > 5000) this._telemetryEvents.splice(0, this._telemetryEvents.length - 5000);
+
+      for (const err of errors) {
+        this._clientErrors.push({ id: newId(), ts: err.ts || nowTs, ...err });
+      }
+      if (this._clientErrors.length > 2000) this._clientErrors.splice(0, this._clientErrors.length - 2000);
+
+      for (const dl of downloads) {
+        this._downloadStats.push({ id: newId(), ts: dl.ts || nowTs, ...dl });
+      }
+      if (this._downloadStats.length > 3000) this._downloadStats.splice(0, this._downloadStats.length - 3000);
+      return { ok: true, count: events.length + errors.length + downloads.length };
+    },
+    async getMetricsSummary() {
+      const totalUsers = users.size;
+      const downloads = this._downloadStats || [];
+      const totalDownloads = downloads.length;
+      const recentErrors = (this._clientErrors || []).slice(-100).reverse();
+      const events = this._telemetryEvents || [];
+      return {
+        totalUsers,
+        totalDownloads,
+        totalErrors: (this._clientErrors || []).length,
+        totalEvents: events.length,
+        recentErrors,
+      };
+    },
+    async listRecentErrors(limit = 100) {
+      return (this._clientErrors || []).slice(-limit).reverse();
+    },
   };
 }
 
@@ -141,11 +182,11 @@ export function createTursoStore({ url, token }) {
     delPresence: 'DELETE FROM presence WHERE user_id = ?',
     friends: 'SELECT CASE WHEN a = ? THEN b ELSE a END AS friendId FROM friendships WHERE a = ? OR b = ?',
     isFriend: 'SELECT 1 AS x FROM friendships WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)',
-    addFriend: 'INSERT INTO friendships (a, b, created) VALUES (?,?,?)',
+    addFriend: 'INSERT OR IGNORE INTO friendships (a, b, created) VALUES (?,?,?)',
     delFriend: 'DELETE FROM friendships WHERE (a = ? AND b = ?) OR (a = ? AND b = ?)',
     insertReq: 'INSERT INTO friend_requests (id, from_id, to_id, message, created) VALUES (?,?,?,?,?)',
-    getReq: 'SELECT id, from_id AS "from", to_id AS "to", message, created FROM friend_requests WHERE id = ?',
-    reqsFor: 'SELECT id, from_id AS "from", to_id AS "to", message, created FROM friend_requests WHERE to_id = ?',
+    getReq: 'SELECT id, from_id, to_id, from_id AS "from", to_id AS "to", message, created FROM friend_requests WHERE id = ?',
+    reqsFor: 'SELECT id, from_id, to_id, from_id AS "from", to_id AS "to", message, created FROM friend_requests WHERE to_id = ?',
     delReq: 'DELETE FROM friend_requests WHERE id = ?',
     addBlock: 'INSERT INTO blocks (blocker, blocked, created) VALUES (?,?,?) ON CONFLICT DO NOTHING',
     delBlock: 'DELETE FROM blocks WHERE blocker = ? AND blocked = ?',
@@ -166,9 +207,16 @@ export function createTursoStore({ url, token }) {
     msgs: 'SELECT id, conversation_id AS conversationId, sender_id AS senderId, body, kind, meta, created FROM messages WHERE conversation_id = ? ORDER BY created ASC LIMIT ?',
     insertNotif: 'INSERT INTO notifications (id, user_id, kind, title, body, ts) VALUES (?,?,?,?,?,?)',
     notifsFor: 'SELECT id, kind, title, body, ts FROM notifications WHERE user_id = ? ORDER BY ts DESC LIMIT 100',
-    delNotif: 'DELETE FROM notifications WHERE id = ?',
     savePrivacy: 'INSERT INTO privacy_settings (user_id, settings) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET settings = excluded.settings',
     getPrivacy: 'SELECT settings FROM privacy_settings WHERE user_id = ?',
+    insertTelemetry: 'INSERT INTO telemetry_events (id, user_id, device_id, event_type, payload, ts) VALUES (?,?,?,?,?,?)',
+    insertError: 'INSERT INTO client_errors (id, user_id, subsystem, message, stack, level, ts) VALUES (?,?,?,?,?,?,?)',
+    insertDownload: 'INSERT INTO download_stats (id, user_id, url, size, duration_ms, status, ts) VALUES (?,?,?,?,?,?,?)',
+    countUsers: 'SELECT COUNT(*) as count FROM users',
+    countDownloads: 'SELECT COUNT(*) as count FROM download_stats',
+    countErrors: 'SELECT COUNT(*) as count FROM client_errors',
+    countEvents: 'SELECT COUNT(*) as count FROM telemetry_events',
+    recentErrors: 'SELECT id, user_id as userId, subsystem, message, stack, level, ts FROM client_errors ORDER BY ts DESC LIMIT ?',
   };
 
   async function one(sql, args) {
@@ -199,11 +247,11 @@ export function createTursoStore({ url, token }) {
     async deletePresence(userId) { await db.exec(q.delPresence, [userId]); },
     async getFriendIds(userId) {
       const rows = await one(q.friends, [userId, userId, userId]);
-      return rows.map(r => r.friendId);
+      return rows.map(r => r.friendId ?? r.friendid ?? r.friend_id).filter(Boolean);
     },
     async areFriends(a, b) { return (await one(q.isFriend, [a, b, b, a])).length > 0; },
     async addFriendship(a, b) {
-      const [x, y] = [a, b].sort();
+      const [x, y] = String(a) < String(b) ? [a, b] : [b, a];
       await db.exec(q.addFriend, [x, y, Date.now()]);
     },
     async removeFriendship(a, b) { await db.exec(q.delFriend, [a, b, b, a]); },
@@ -211,13 +259,24 @@ export function createTursoStore({ url, token }) {
       const existing = (await db.batch([
         { sql: q.reqsFor, args: [to] },
       ]))[0];
-      for (const r of rowsToObjects(existing)) if (r.from === from) return r;
+      for (const r of rowsToObjects(existing)) {
+        const rFrom = r.from ?? r.from_id ?? r.fromId;
+        if (rFrom === from) return { ...r, from: rFrom, to: r.to ?? r.to_id ?? r.toId };
+      }
       const id = newId();
       await db.exec(q.insertReq, [id, from, to, message ?? null, Date.now()]);
       return { id, from, to, message: message ?? null, created: Date.now() };
     },
-    async getRequest(id) { return (await one(q.getReq, [id]))[0] ?? null; },
-    async listRequestsFor(userId) { return one(q.reqsFor, [userId]); },
+    async getRequest(id) {
+      const rows = await one(q.getReq, [id]);
+      if (!rows[0]) return null;
+      const r = rows[0];
+      return { id: r.id, from: r.from ?? r.from_id ?? r.fromId, to: r.to ?? r.to_id ?? r.toId, message: r.message ?? null, created: r.created };
+    },
+    async listRequestsFor(userId) {
+      const rows = await one(q.reqsFor, [userId]);
+      return rows.map(r => ({ id: r.id, from: r.from ?? r.from_id ?? r.fromId, to: r.to ?? r.to_id ?? r.toId, message: r.message ?? null, created: r.created }));
+    },
     async deleteRequest(id) { await db.exec(q.delReq, [id]); },
     async addBlock(a, b) { await db.exec(q.addBlock, [a, b, Date.now()]); },
     async removeBlock(a, b) { await db.exec(q.delBlock, [a, b]); },
@@ -258,6 +317,52 @@ export function createTursoStore({ url, token }) {
     async getPrivacy(userId) {
       const rows = await one(q.getPrivacy, [userId]);
       return rows[0] ? JSON.parse(rows[0].settings) : null;
+    },
+    // ---- Telemetry & Admin Store Methods ----
+    async recordTelemetryBatch({ events = [], errors = [], downloads = [] }) {
+      const stmts = [];
+      const nowTs = Date.now();
+      for (const ev of events) {
+        stmts.push({
+          sql: q.insertTelemetry,
+          args: [newId(), ev.userId ?? null, ev.deviceId ?? null, ev.type || 'event', JSON.stringify(ev.payload || {}), ev.ts || nowTs],
+        });
+      }
+      for (const err of errors) {
+        stmts.push({
+          sql: q.insertError,
+          args: [newId(), err.userId ?? null, err.subsystem || 'general', String(err.message || '').slice(0, 1000), String(err.stack || '').slice(0, 4000), err.level || 'error', err.ts || nowTs],
+        });
+      }
+      for (const dl of downloads) {
+        stmts.push({
+          sql: q.insertDownload,
+          args: [newId(), dl.userId ?? null, dl.url || '', dl.size || 0, dl.durationMs || 0, dl.status || 'ok', dl.ts || nowTs],
+        });
+      }
+      if (stmts.length > 0) {
+        await db.batch(stmts);
+      }
+      return { ok: true, count: stmts.length };
+    },
+    async getMetricsSummary() {
+      const [uRes, dlRes, errRes, evRes] = await Promise.all([
+        one(q.countUsers, []).catch(() => [{ count: 0 }]),
+        one(q.countDownloads, []).catch(() => [{ count: 0 }]),
+        one(q.countErrors, []).catch(() => [{ count: 0 }]),
+        one(q.countEvents, []).catch(() => [{ count: 0 }]),
+      ]);
+      const recentErrRows = await one(q.recentErrors, [100]).catch(() => []);
+      return {
+        totalUsers: Number(uRes[0]?.count ?? 0),
+        totalDownloads: Number(dlRes[0]?.count ?? 0),
+        totalErrors: Number(errRes[0]?.count ?? 0),
+        totalEvents: Number(evRes[0]?.count ?? 0),
+        recentErrors: recentErrRows,
+      };
+    },
+    async listRecentErrors(limit = 100) {
+      return one(q.recentErrors, [limit]).catch(() => []);
     },
   };
 }

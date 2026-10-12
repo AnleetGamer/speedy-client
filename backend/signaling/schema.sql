@@ -87,3 +87,35 @@ CREATE TABLE IF NOT EXISTS reports (
 CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, created);
 CREATE INDEX IF NOT EXISTS idx_requests_to ON friend_requests(to_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, ts);
+
+-- Speedy Telemetry & Admin Tables
+CREATE TABLE IF NOT EXISTS telemetry_events (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  device_id TEXT,
+  event_type TEXT NOT NULL,
+  payload TEXT,
+  ts INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS client_errors (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  subsystem TEXT NOT NULL,
+  message TEXT NOT NULL,
+  stack TEXT,
+  level TEXT NOT NULL DEFAULT 'error',
+  ts INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS download_stats (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  url TEXT,
+  size INTEGER,
+  duration_ms INTEGER,
+  status TEXT NOT NULL,
+  ts INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_telemetry_type_ts ON telemetry_events(event_type, ts);
+CREATE INDEX IF NOT EXISTS idx_client_errors_ts ON client_errors(ts);
+CREATE INDEX IF NOT EXISTS idx_download_stats_ts ON download_stats(ts);
+
