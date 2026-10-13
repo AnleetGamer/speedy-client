@@ -156,16 +156,28 @@ export function createMemoryStore() {
       const totalDownloads = downloads.length;
       const recentErrors = (this._clientErrors || []).slice(-100).reverse();
       const events = this._telemetryEvents || [];
+      const uniqueDevices = new Set(events.map(e => e.deviceId).filter(Boolean)).size;
       return {
         totalUsers,
         totalDownloads,
         totalErrors: (this._clientErrors || []).length,
         totalEvents: events.length,
+        totalDevices: uniqueDevices,
         recentErrors,
       };
     },
     async listRecentErrors(limit = 100) {
       return (this._clientErrors || []).slice(-limit).reverse();
+    },
+    async listAllErrors(limit = 500) {
+      return (this._clientErrors || []).slice(-limit).reverse();
+    },
+    async clearAllErrors() {
+      this._clientErrors = [];
+      return { ok: true };
+    },
+    async listRecentDownloads(limit = 50) {
+      return (this._downloadStats || []).slice(-limit).reverse();
     },
   };
 }
@@ -217,7 +229,10 @@ export function createTursoStore({ url, token }) {
     countDownloads: 'SELECT COUNT(*) as count FROM download_stats',
     countErrors: 'SELECT COUNT(*) as count FROM client_errors',
     countEvents: 'SELECT COUNT(*) as count FROM telemetry_events',
+    countDevices: 'SELECT COUNT(DISTINCT device_id) as count FROM telemetry_events WHERE device_id IS NOT NULL',
     recentErrors: 'SELECT id, user_id as userId, subsystem, message, stack, level, ts FROM client_errors ORDER BY ts DESC LIMIT ?',
+    clearErrors: 'DELETE FROM client_errors',
+    recentDownloads: 'SELECT id, user_id as userId, url, size, duration_ms as durationMs, status, ts FROM download_stats ORDER BY ts DESC LIMIT ?',
   };
 
   async function one(sql, args) {
@@ -347,11 +362,12 @@ export function createTursoStore({ url, token }) {
       return { ok: true, count: stmts.length };
     },
     async getMetricsSummary() {
-      const [uRes, dlRes, errRes, evRes] = await Promise.all([
+      const [uRes, dlRes, errRes, evRes, devRes] = await Promise.all([
         one(q.countUsers, []).catch(() => [{ count: 0 }]),
         one(q.countDownloads, []).catch(() => [{ count: 0 }]),
         one(q.countErrors, []).catch(() => [{ count: 0 }]),
         one(q.countEvents, []).catch(() => [{ count: 0 }]),
+        one(q.countDevices, []).catch(() => [{ count: 0 }]),
       ]);
       const recentErrRows = await one(q.recentErrors, [100]).catch(() => []);
       return {
@@ -359,11 +375,22 @@ export function createTursoStore({ url, token }) {
         totalDownloads: Number(dlRes[0]?.count ?? 0),
         totalErrors: Number(errRes[0]?.count ?? 0),
         totalEvents: Number(evRes[0]?.count ?? 0),
+        totalDevices: Number(devRes[0]?.count ?? 0),
         recentErrors: recentErrRows,
       };
     },
     async listRecentErrors(limit = 100) {
       return one(q.recentErrors, [limit]).catch(() => []);
+    },
+    async listAllErrors(limit = 500) {
+      return one(q.recentErrors, [limit]).catch(() => []);
+    },
+    async clearAllErrors() {
+      await db.exec(q.clearErrors, []);
+      return { ok: true };
+    },
+    async listRecentDownloads(limit = 50) {
+      return one(q.recentDownloads, [limit]).catch(() => []);
     },
   };
 }

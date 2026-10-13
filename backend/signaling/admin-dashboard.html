@@ -3,20 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Speedy Client — Admin Control Panel</title>
+  <title>Speedy Client — Admin Control & Telemetry Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #090a0f;
-      --card-bg: rgba(18, 20, 29, 0.75);
+      --bg: #07080c;
+      --card-bg: rgba(15, 17, 26, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover: rgba(255, 255, 255, 0.12);
       --accent: #6366f1;
+      --accent-hover: #4f46e5;
       --accent-glow: rgba(99, 102, 241, 0.25);
       --success: #10b981;
       --danger: #ef4444;
       --warning: #f59e0b;
+      --info: #3b82f6;
       --text: #f3f4f6;
       --text-muted: #9ca3af;
       --font: 'Plus Jakarta Sans', sans-serif;
@@ -33,16 +36,17 @@
       flex-direction: column;
       overflow-x: hidden;
       background-image: 
-        radial-gradient(circle at 15% 20%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 85% 80%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+        radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.09) 0%, transparent 45%),
+        radial-gradient(circle at 90% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
+        radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.03) 0%, transparent 60%);
     }
 
     /* Auth Overlay */
     #auth-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(9, 10, 15, 0.95);
-      backdrop-filter: blur(12px);
+      background: rgba(7, 8, 12, 0.95);
+      backdrop-filter: blur(16px);
       z-index: 9999;
       display: flex;
       align-items: center;
@@ -51,18 +55,18 @@
     .auth-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 16px;
-      padding: 36px;
+      border-radius: 20px;
+      padding: 40px;
       width: 100%;
-      max-width: 420px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+      max-width: 440px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
       text-align: center;
     }
     .auth-logo {
-      font-size: 24px;
+      font-size: 26px;
       font-weight: 800;
       letter-spacing: -0.5px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
       background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
@@ -70,27 +74,27 @@
     .auth-subtitle {
       color: var(--text-muted);
       font-size: 13px;
-      margin-bottom: 24px;
+      margin-bottom: 28px;
     }
     .input-group {
-      margin-bottom: 16px;
+      margin-bottom: 18px;
       text-align: left;
     }
     .input-group label {
       display: block;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
       color: var(--text-muted);
       margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.8px;
     }
     .input-field {
       width: 100%;
       padding: 12px 14px;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid var(--card-border);
-      border-radius: 8px;
+      border-radius: 10px;
       color: #fff;
       font-size: 14px;
       outline: none;
@@ -102,19 +106,19 @@
     }
     .btn-submit {
       width: 100%;
-      padding: 12px;
+      padding: 13px;
       background: var(--accent);
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       color: #fff;
       font-weight: 700;
       font-size: 14px;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 10px;
       transition: all 0.2s;
     }
     .btn-submit:hover {
-      background: #4f46e5;
+      background: var(--accent-hover);
       transform: translateY(-1px);
     }
     .auth-error {
@@ -124,15 +128,15 @@
       display: none;
     }
 
-    /* Main Dashboard Layout */
+    /* Main Header */
     header {
-      padding: 20px 40px;
+      padding: 18px 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-bottom: 1px solid var(--card-border);
-      backdrop-filter: blur(8px);
-      background: rgba(9, 10, 15, 0.5);
+      backdrop-filter: blur(12px);
+      background: rgba(7, 8, 12, 0.7);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -148,15 +152,15 @@
       border: 1px solid rgba(99, 102, 241, 0.3);
       padding: 4px 10px;
       border-radius: 20px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
     }
     .status-pill {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
       background: rgba(255, 255, 255, 0.03);
       padding: 6px 14px;
@@ -176,46 +180,86 @@
       50% { opacity: 1; }
       100% { opacity: 0.4; }
     }
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-action {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .btn-action:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--card-hover);
+    }
+    .btn-action.primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+    .btn-action.primary:hover {
+      background: var(--accent-hover);
+    }
+    .btn-action.danger:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
 
+    /* Main Content Container */
     main {
-      padding: 36px 40px;
-      max-width: 1400px;
+      padding: 32px 40px;
+      max-width: 1500px;
       margin: 0 auto;
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 32px;
+      gap: 28px;
     }
 
-    /* Metrics Grid */
+    /* Top Metrics Grid */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 18px;
     }
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 22px;
       position: relative;
       overflow: hidden;
       transition: transform 0.2s, border-color 0.2s;
     }
     .stat-card:hover {
-      border-color: rgba(255, 255, 255, 0.15);
+      border-color: var(--card-hover);
       transform: translateY(-2px);
     }
     .stat-title {
       color: var(--text-muted);
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
     .stat-val {
-      font-size: 32px;
+      font-size: 34px;
       font-weight: 800;
       letter-spacing: -1px;
     }
@@ -225,7 +269,55 @@
       color: var(--text-muted);
     }
 
-    /* Section Layouts */
+    /* Navigation Tabs */
+    .tabs-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 12px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .tab-btn.active {
+      color: #fff;
+      background: rgba(99, 102, 241, 0.15);
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+    .tab-badge {
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Tab Panels */
+    .tab-pane {
+      display: none;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .tab-pane.active {
+      display: flex;
+    }
+
+    /* Section Cards */
     .dashboard-section {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
@@ -233,28 +325,28 @@
       overflow: hidden;
     }
     .section-header {
-      padding: 18px 24px;
+      padding: 16px 24px;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.01);
+      background: rgba(255, 255, 255, 0.015);
     }
     .section-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
-    /* Log Stream Terminal */
+    /* Live Stream Console */
     .terminal-container {
-      background: #06070a;
+      background: #050608;
       padding: 16px;
       font-family: var(--mono);
       font-size: 12px;
-      max-height: 400px;
+      max-height: 480px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
@@ -264,12 +356,12 @@
       display: flex;
       gap: 12px;
       line-height: 1.5;
-      padding: 4px 8px;
-      border-radius: 4px;
+      padding: 5px 8px;
+      border-radius: 6px;
       transition: background 0.15s;
     }
     .log-row:hover {
-      background: rgba(255, 255, 255, 0.03);
+      background: rgba(255, 255, 255, 0.04);
     }
     .log-time {
       color: #6b7280;
@@ -279,11 +371,15 @@
       font-weight: 700;
       flex-shrink: 0;
       padding: 0 6px;
-      border-radius: 3px;
+      border-radius: 4px;
+      font-size: 11px;
     }
-    .log-level.error { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    .log-level.warn  { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
-    .log-level.info  { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+    .log-level.startup  { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .log-level.shutdown { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .log-level.error    { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
+    .log-level.download { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
+    .log-level.social   { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
+    .log-level.info     { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
     .log-subsys {
       color: #9ca3af;
       flex-shrink: 0;
@@ -293,21 +389,142 @@
       word-break: break-all;
     }
 
-    .btn-logout {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text-muted);
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
+    /* Search & Filter Controls */
+    .filter-bar {
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border-bottom: 1px solid var(--card-border);
+      flex-wrap: wrap;
     }
-    .btn-logout:hover {
-      background: rgba(239, 68, 68, 0.15);
-      color: var(--danger);
-      border-color: rgba(239, 68, 68, 0.3);
+    .filter-input {
+      padding: 8px 12px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      min-width: 260px;
+    }
+    .filter-select {
+      padding: 8px 12px;
+      background: #11131c;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 12px 18px;
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-muted);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .data-table td {
+      padding: 12px 18px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: #e5e7eb;
+    }
+    .data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .table-empty {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--mono);
+    }
+    .badge-windows { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+    .badge-linux   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-darwin  { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
+    .badge-online  { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-offline { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+
+    /* Modal */
+    #stack-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 8, 12, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-box {
+      background: #0d0f17;
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 800px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      max-height: 85vh;
+    }
+    .modal-header {
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .code-block {
+      background: #050609;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 16px;
+      font-family: var(--mono);
+      font-size: 12px;
+      color: #e5e7eb;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      line-height: 1.6;
+    }
+    .modal-footer {
+      padding: 14px 24px;
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.01);
     }
   </style>
 </head>
@@ -317,7 +534,7 @@
   <div id="auth-overlay">
     <div class="auth-card">
       <div class="auth-logo">Speedy Control</div>
-      <div class="auth-subtitle">Restricted Administrative Monitoring</div>
+      <div class="auth-subtitle">Restricted Administrative Monitoring & Telemetry</div>
       <form id="login-form">
         <div class="input-group">
           <label for="admin-email">Admin Email</label>
@@ -327,7 +544,7 @@
           <label for="admin-pass">Password</label>
           <input type="password" id="admin-pass" class="input-field" placeholder="••••••••••••" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn-submit">Sign In</button>
+        <button type="submit" class="btn-submit">Sign In to Dashboard</button>
         <div id="auth-error" class="auth-error">Invalid admin credentials</div>
       </form>
     </div>
@@ -337,83 +554,293 @@
   <header>
     <div class="header-left">
       <h1 style="font-size: 18px; font-weight: 800; letter-spacing: -0.5px;">SPEEDY TELEMETRY</h1>
-      <span class="logo-badge">PROD ADMIN</span>
+      <span class="logo-badge">TURSO PERSISTENT</span>
     </div>
-    <div style="display: flex; align-items: center; gap: 16px;">
+    <div class="header-actions">
       <div class="status-pill">
         <div class="pulse-dot" id="live-dot"></div>
         <span id="live-status">Connecting to Render...</span>
       </div>
-      <button class="btn-logout" id="btn-logout">Exit Session</button>
+      <button class="btn-action primary" id="btn-quick-export">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        Download Errors
+      </button>
+      <button class="btn-action" id="btn-refresh">Refresh</button>
+      <button class="btn-action danger" id="btn-logout">Exit Session</button>
     </div>
   </header>
 
-  <!-- Main Dashboard Content -->
+  <!-- Main Content -->
   <main>
-    <!-- Key Metrics Grid -->
+    <!-- Top Metric Cards Grid -->
     <div class="metrics-grid">
       <div class="stat-card">
-        <div class="stat-title">Active Online Users</div>
-        <div class="stat-val" id="val-online" style="color: var(--success);">0</div>
-        <div class="stat-meta">Live concurrent launcher sessions</div>
+        <div class="stat-title">
+          <span>Active Online Launchers</span>
+          <span style="font-size: 16px;">💻</span>
+        </div>
+        <div class="stat-val" id="val-launchers" style="color: var(--success);">0</div>
+        <div class="stat-meta">Live desktop clients running right now</div>
       </div>
       <div class="stat-card">
-        <div class="stat-title">Total Users Registered</div>
-        <div class="stat-val" id="val-users">0</div>
-        <div class="stat-meta">Durable accounts in Turso DB</div>
+        <div class="stat-title">
+          <span>Social Users Connected</span>
+          <span style="font-size: 16px;">👥</span>
+        </div>
+        <div class="stat-val" id="val-online" style="color: #818cf8;">0</div>
+        <div class="stat-meta">Active WebSockets in voice & chat</div>
       </div>
       <div class="stat-card">
-        <div class="stat-title">Launcher Downloads</div>
+        <div class="stat-title">
+          <span>Total Device Installs</span>
+          <span style="font-size: 16px;">📦</span>
+        </div>
+        <div class="stat-val" id="val-devices">0</div>
+        <div class="stat-meta">Unique client devices recorded</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">
+          <span>Client Asset Downloads</span>
+          <span style="font-size: 16px;">📥</span>
+        </div>
         <div class="stat-val" id="val-downloads">0</div>
-        <div class="stat-meta">Total client asset & mod downloads</div>
+        <div class="stat-meta">Total client mod & asset downloads</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-title">Logged Client Errors</div>
+      <div class="stat-card" style="cursor: pointer;" id="card-errors-jump">
+        <div class="stat-title">
+          <span>Logged Client Errors</span>
+          <span style="font-size: 16px;">⚠️</span>
+        </div>
         <div class="stat-val" id="val-errors" style="color: var(--danger);">0</div>
-        <div class="stat-meta">Errors batched from launcher nodes</div>
+        <div class="stat-meta">Saved in Turso DB (Click to inspect)</div>
       </div>
     </div>
 
-    <!-- Live Stream Console -->
-    <div class="dashboard-section">
-      <div class="section-header">
-        <div class="section-title">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-          Real-Time Telemetry & Error Stream
+    <!-- Navigation Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" data-tab="tab-stream">
+        <span>📡 Live Activity Stream</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-errors">
+        <span>🐞 Turso Error Center</span>
+        <span class="tab-badge" id="badge-errors">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-launchers">
+        <span>💻 Active Launchers</span>
+        <span class="tab-badge" id="badge-launchers">0</span>
+      </button>
+      <button class="tab-btn" data-tab="tab-downloads">
+        <span>📊 Downloads Log</span>
+      </button>
+    </div>
+
+    <!-- Tab 1: Live Activity Stream -->
+    <div class="tab-pane active" id="tab-stream">
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            Real-Time Live Telemetry Console
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action" id="btn-clear-stream">Clear Stream</button>
+          </div>
         </div>
-        <div style="font-size: 12px; color: var(--text-muted);">Auto-updating via Render SSE</div>
+        <div class="terminal-container" id="terminal-feed">
+          <div class="log-row">
+            <span class="log-time">[BOOT]</span>
+            <span class="log-level info">SYSTEM</span>
+            <span class="log-msg">Admin telemetry stream initialized. Waiting for launcher events...</span>
+          </div>
+        </div>
       </div>
-      <div class="terminal-container" id="terminal-feed">
-        <div class="log-row">
-          <span class="log-time">[BOOT]</span>
-          <span class="log-level info">SYSTEM</span>
-          <span class="log-msg">Admin stream initialized. Waiting for launcher batches...</span>
+    </div>
+
+    <!-- Tab 2: Turso Error Center -->
+    <div class="tab-pane" id="tab-errors">
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            Turso Persistent Client Errors
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action primary" id="btn-export-json">Download JSON</button>
+            <button class="btn-action" id="btn-export-csv">Download CSV</button>
+            <button class="btn-action danger" id="btn-clear-errors">Clear Errors</button>
+          </div>
+        </div>
+        <div class="filter-bar">
+          <input type="text" id="error-search" class="filter-input" placeholder="Search error message, stack, or device...">
+          <select id="error-subsystem" class="filter-select">
+            <option value="">All Subsystems</option>
+            <option value="boot">boot</option>
+            <option value="download">download</option>
+            <option value="game">game</option>
+            <option value="bridge">bridge</option>
+            <option value="audio">audio</option>
+            <option value="csharp">csharp</option>
+            <option value="crash">crash</option>
+          </select>
+          <button class="btn-action" id="btn-reload-errors">Search / Refresh</button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Timestamp</th>
+                <th style="width: 90px;">Level</th>
+                <th style="width: 110px;">Subsystem</th>
+                <th>Error Message</th>
+                <th style="width: 100px;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="errors-tbody">
+              <tr><td colspan="5" class="table-empty">Loading errors from Turso persistent database...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Active Launchers -->
+    <div class="tab-pane" id="tab-launchers">
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            Active Desktop Clients Running Now
+          </div>
+          <button class="btn-action" id="btn-refresh-launchers">Refresh List</button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Device ID</th>
+                <th>Platform</th>
+                <th>Architecture</th>
+                <th>Client Version</th>
+                <th>First Launched</th>
+                <th>Last Active</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="launchers-tbody">
+              <tr><td colspan="7" class="table-empty">No active launchers connected right now. Launch the launcher to see it here!</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Downloads Analytics -->
+    <div class="tab-pane" id="tab-downloads">
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Recent Client Mod & Asset Downloads
+          </div>
+          <button class="btn-action" id="btn-refresh-downloads">Refresh</button>
+        </div>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 140px;">Timestamp</th>
+                <th>Asset / Download URL</th>
+                <th style="width: 100px;">Size</th>
+                <th style="width: 110px;">Duration</th>
+                <th style="width: 90px;">Status</th>
+              </tr>
+            </thead>
+            <tbody id="downloads-tbody">
+              <tr><td colspan="5" class="table-empty">No recent downloads recorded yet.</td></tr>
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
+
+  <!-- Stack Trace Modal -->
+  <div id="stack-modal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div style="font-weight: 700; font-size: 15px;" id="modal-title">Client Error Inspection</div>
+        <button class="btn-action" id="modal-close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Error Message</div>
+          <div style="font-size: 14px; font-weight: 600; margin-top: 4px; color: #f87171;" id="modal-msg"></div>
+        </div>
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Stack Trace</div>
+          <div class="code-block" id="modal-stack">No stack trace available for this error.</div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action primary" id="modal-copy">Copy Stack</button>
+        <button class="btn-action" id="modal-dismiss">Close</button>
+      </div>
+    </div>
+  </div>
 
   <script>
     const authOverlay = document.getElementById('auth-overlay');
     const loginForm = document.getElementById('login-form');
     const authError = document.getElementById('auth-error');
     const btnLogout = document.getElementById('btn-logout');
+    const btnRefresh = document.getElementById('btn-refresh');
     const liveStatus = document.getElementById('live-status');
     const liveDot = document.getElementById('live-dot');
     const terminalFeed = document.getElementById('terminal-feed');
 
+    // Stat card values
+    const valLaunchers = document.getElementById('val-launchers');
     const valOnline = document.getElementById('val-online');
-    const valUsers = document.getElementById('val-users');
+    const valDevices = document.getElementById('val-devices');
     const valDownloads = document.getElementById('val-downloads');
     const valErrors = document.getElementById('val-errors');
+    const badgeErrors = document.getElementById('badge-errors');
+    const badgeLaunchers = document.getElementById('badge-launchers');
+
+    // Error Center elements
+    const errorsTbody = document.getElementById('errors-tbody');
+    const errorSearch = document.getElementById('error-search');
+    const errorSubsystem = document.getElementById('error-subsystem');
+    const btnReloadErrors = document.getElementById('btn-reload-errors');
+    const btnExportJson = document.getElementById('btn-export-json');
+    const btnExportCsv = document.getElementById('btn-export-csv');
+    const btnClearErrors = document.getElementById('btn-clear-errors');
+    const btnQuickExport = document.getElementById('btn-quick-export');
+
+    // Launchers & Downloads tables
+    const launchersTbody = document.getElementById('launchers-tbody');
+    const downloadsTbody = document.getElementById('downloads-tbody');
+    const btnRefreshLaunchers = document.getElementById('btn-refresh-launchers');
+    const btnRefreshDownloads = document.getElementById('btn-refresh-downloads');
+
+    // Modal elements
+    const stackModal = document.getElementById('stack-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalMsg = document.getElementById('modal-msg');
+    const modalStack = document.getElementById('modal-stack');
+    const modalClose = document.getElementById('modal-close');
+    const modalDismiss = document.getElementById('modal-dismiss');
+    const modalCopy = document.getElementById('modal-copy');
 
     let token = localStorage.getItem('speedy_admin_token');
     let evtSource = null;
+    let cachedErrors = [];
 
     if (token) {
       initDashboard();
     }
 
+    // Login Form
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       authError.style.display = 'none';
@@ -435,7 +862,7 @@
           authError.innerText = data.error || 'Login failed';
           authError.style.display = 'block';
         }
-      } catch (err) {
+      } catch {
         authError.innerText = 'Network error reaching Render backend';
         authError.style.display = 'block';
       }
@@ -446,13 +873,43 @@
       location.reload();
     });
 
+    btnRefresh.addEventListener('click', () => {
+      fetchMetrics();
+      loadErrors();
+      loadDownloads();
+    });
+
+    // Tab Switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const targetId = btn.dataset.tab;
+        document.getElementById(targetId)?.classList.add('active');
+        if (targetId === 'tab-errors') loadErrors();
+        if (targetId === 'tab-downloads') loadDownloads();
+      });
+    });
+
+    document.getElementById('card-errors-jump').addEventListener('click', () => {
+      document.querySelector('[data-tab="tab-errors"]')?.click();
+    });
+
+    document.getElementById('btn-clear-stream').addEventListener('click', () => {
+      terminalFeed.innerHTML = '';
+    });
+
+    // Dashboard Initialization
     async function initDashboard() {
       authOverlay.style.display = 'none';
       await fetchMetrics();
       startStream();
-      setInterval(fetchMetrics, 15000); // Polling backup every 15s to keep stats fresh
+      loadErrors();
+      setInterval(fetchMetrics, 12000); // 12s metrics refresh
     }
 
+    // Metrics API
     async function fetchMetrics() {
       try {
         const res = await fetch('/api/admin/metrics', {
@@ -464,24 +921,153 @@
           return;
         }
         const data = await res.json();
+        valLaunchers.innerText = data.onlineLaunchers || 0;
         valOnline.innerText = data.onlineUsers || 0;
-        valUsers.innerText = data.totalUsers || 0;
+        valDevices.innerText = data.totalDevices || 0;
         valDownloads.innerText = data.totalDownloads || 0;
         valErrors.innerText = data.totalErrors || 0;
+        badgeErrors.innerText = data.totalErrors || 0;
+        badgeLaunchers.innerText = data.onlineLaunchers || 0;
 
-        if (Array.isArray(data.recentErrors)) {
-          // Prepend recent errors if feed is empty
-          if (terminalFeed.children.length <= 1) {
-            for (const err of data.recentErrors) {
-              appendLog(err.ts, 'error', err.subsystem, `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
-            }
-          }
-        }
+        renderLaunchers(data.activeLaunchersList || []);
       } catch (e) {
         console.warn('Metrics refresh failed:', e);
       }
     }
 
+    function renderLaunchers(list) {
+      if (!list || list.length === 0) {
+        launchersTbody.innerHTML = '<tr><td colspan="7" class="table-empty">No active launchers connected right now. Launch the launcher to see it here!</td></tr>';
+        return;
+      }
+      launchersTbody.innerHTML = list.map(l => `
+        <tr>
+          <td><code style="color: #a5b4fc;">${escapeHtml(l.deviceId)}</code></td>
+          <td><span class="badge badge-${l.platform || 'windows'}">${(l.platform || 'windows').toUpperCase()}</span></td>
+          <td>${escapeHtml(l.arch || 'x64')}</td>
+          <td>v${escapeHtml(l.version || '1.0.0')}</td>
+          <td>${new Date(l.firstSeen || Date.now()).toLocaleTimeString()}</td>
+          <td>${new Date(l.lastSeen || Date.now()).toLocaleTimeString()}</td>
+          <td><span class="badge badge-online">ONLINE</span></td>
+        </tr>
+      `).join('');
+    }
+
+    // Error Center
+    async function loadErrors() {
+      const search = errorSearch.value.trim();
+      const subsystem = errorSubsystem.value;
+      const q = new URLSearchParams();
+      if (search) q.set('search', search);
+      if (subsystem) q.set('subsystem', subsystem);
+
+      try {
+        const res = await fetch(`/api/admin/errors?${q.toString()}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        cachedErrors = data.errors || [];
+        renderErrorsTable(cachedErrors);
+      } catch {
+        errorsTbody.innerHTML = '<tr><td colspan="5" class="table-empty" style="color: var(--danger);">Failed to load errors from Turso DB.</td></tr>';
+      }
+    }
+
+    function renderErrorsTable(errors) {
+      if (!errors || errors.length === 0) {
+        errorsTbody.innerHTML = '<tr><td colspan="5" class="table-empty" style="color: var(--success);">Zero errors found! Everything is healthy.</td></tr>';
+        return;
+      }
+      errorsTbody.innerHTML = errors.map((err, idx) => `
+        <tr>
+          <td style="color: var(--text-muted); font-size: 11px;">${new Date(err.ts).toLocaleString()}</td>
+          <td><span class="badge badge-offline">${(err.level || 'ERROR').toUpperCase()}</span></td>
+          <td><code style="color: #fbbf24;">[${escapeHtml(err.subsystem || 'general')}]</code></td>
+          <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(err.message)}</td>
+          <td>
+            <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="viewErrorDetails(${idx})">Inspect</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.viewErrorDetails = function(index) {
+      const err = cachedErrors[index];
+      if (!err) return;
+      modalTitle.innerText = `Error in [${err.subsystem || 'unknown'}] — ${new Date(err.ts).toLocaleString()}`;
+      modalMsg.innerText = err.message;
+      modalStack.innerText = err.stack || 'No detailed stack trace recorded for this error.';
+      stackModal.style.display = 'flex';
+    };
+
+    btnReloadErrors.addEventListener('click', loadErrors);
+
+    // Error Exports
+    btnExportJson.addEventListener('click', () => {
+      window.open(`/api/admin/errors/export?format=json&token=${encodeURIComponent(token)}`, '_blank');
+    });
+
+    btnQuickExport.addEventListener('click', () => {
+      window.open(`/api/admin/errors/export?format=json&token=${encodeURIComponent(token)}`, '_blank');
+    });
+
+    btnExportCsv.addEventListener('click', () => {
+      window.open(`/api/admin/errors/export?format=csv&token=${encodeURIComponent(token)}`, '_blank');
+    });
+
+    btnClearErrors.addEventListener('click', async () => {
+      if (!confirm('Are you sure you want to clear ALL logged client errors from Turso DB?')) return;
+      try {
+        const res = await fetch('/api/admin/errors/clear', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          loadErrors();
+          fetchMetrics();
+        }
+      } catch {}
+    });
+
+    // Downloads Log
+    async function loadDownloads() {
+      try {
+        const res = await fetch('/api/admin/downloads', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const list = data.downloads || [];
+        if (list.length === 0) {
+          downloadsTbody.innerHTML = '<tr><td colspan="5" class="table-empty">No downloads recorded yet.</td></tr>';
+          return;
+        }
+        downloadsTbody.innerHTML = list.map(dl => `
+          <tr>
+            <td style="color: var(--text-muted); font-size: 11px;">${new Date(dl.ts).toLocaleTimeString()}</td>
+            <td><code style="color: #93c5fd;">${escapeHtml(dl.url)}</code></td>
+            <td>${formatBytes(dl.size)}</td>
+            <td>${dl.durationMs || 0} ms</td>
+            <td><span class="badge ${dl.status === 'ok' ? 'badge-online' : 'badge-offline'}">${dl.status.toUpperCase()}</span></td>
+          </tr>
+        `).join('');
+      } catch {
+        downloadsTbody.innerHTML = '<tr><td colspan="5" class="table-empty">Failed to load downloads.</td></tr>';
+      }
+    }
+
+    btnRefreshDownloads.addEventListener('click', loadDownloads);
+    btnRefreshLaunchers.addEventListener('click', fetchMetrics);
+
+    // Modal Close
+    modalClose.addEventListener('click', () => stackModal.style.display = 'none');
+    modalDismiss.addEventListener('click', () => stackModal.style.display = 'none');
+    modalCopy.addEventListener('click', () => {
+      navigator.clipboard.writeText(modalMsg.innerText + '\n\n' + modalStack.innerText);
+      modalCopy.innerText = 'Copied!';
+      setTimeout(() => modalCopy.innerText = 'Copy Stack', 2000);
+    });
+
+    // SSE Stream
     function startStream() {
       if (evtSource) evtSource.close();
       evtSource = new EventSource(`/api/admin/live-stream?token=${encodeURIComponent(token)}`);
@@ -495,18 +1081,34 @@
       evtSource.addEventListener('connected', (e) => {
         const data = JSON.parse(e.data);
         valOnline.innerText = data.onlineUsers || 0;
+        valLaunchers.innerText = data.onlineLaunchers || 0;
+      });
+
+      evtSource.addEventListener('startup', (e) => {
+        const data = JSON.parse(e.data);
+        valLaunchers.innerText = data.activeLaunchers || (Number(valLaunchers.innerText) + 1);
+        appendLog(Date.now(), 'startup', 'LAUNCHER', `🟢 Launcher started on ${data.platform || 'windows'} (${data.deviceId || 'spd-client'}) v${data.version || '1.0.0'}`);
+        fetchMetrics();
+      });
+
+      evtSource.addEventListener('shutdown', (e) => {
+        const data = JSON.parse(e.data);
+        valLaunchers.innerText = data.activeLaunchers ?? Math.max(0, Number(valLaunchers.innerText) - 1);
+        appendLog(Date.now(), 'shutdown', 'LAUNCHER', `🔴 Launcher closed (${data.deviceId || 'spd-client'}) — Uptime: ${data.uptimeSeconds || 0}s`);
+        fetchMetrics();
       });
 
       evtSource.addEventListener('presence', (e) => {
         const data = JSON.parse(e.data);
         valOnline.innerText = data.onlineUsers || 0;
-        appendLog(Date.now(), 'info', 'PRESENCE', `User ${data.userId} is ${data.status}`);
+        appendLog(Date.now(), 'social', 'PRESENCE', `User ${data.userId || data.username} is ${data.status}`);
       });
 
       evtSource.addEventListener('error', (e) => {
         if (e.data) {
           const err = JSON.parse(e.data);
           valErrors.innerText = (Number(valErrors.innerText) || 0) + 1;
+          badgeErrors.innerText = valErrors.innerText;
           appendLog(err.ts || Date.now(), 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
         } else {
           liveStatus.innerText = 'Reconnecting (Render sleep/wake)...';
@@ -515,15 +1117,19 @@
         }
       });
 
-      evtSource.addEventListener('downloads', (e) => {
-        const data = JSON.parse(e.data);
-        valDownloads.innerText = (Number(valDownloads.innerText) || 0) + (data.count || 1);
-        appendLog(Date.now(), 'info', 'DOWNLOAD', `Batched ${data.count} download event(s)`);
+      evtSource.addEventListener('download', (e) => {
+        const dl = JSON.parse(e.data);
+        valDownloads.innerText = (Number(valDownloads.innerText) || 0) + 1;
+        appendLog(Date.now(), 'download', 'DOWNLOAD', `Downloaded asset: ${dl.url} (${formatBytes(dl.size)}) - ${dl.status}`);
       });
 
       evtSource.addEventListener('events', (e) => {
         const data = JSON.parse(e.data);
-        appendLog(Date.now(), 'info', 'LAUNCHER', `Received batch of ${data.count} lifecycle event(s)`);
+        appendLog(Date.now(), 'info', 'BATCH', `Processed batch of ${data.count} telemetry event(s)`);
+      });
+
+      evtSource.addEventListener('errors_cleared', () => {
+        appendLog(Date.now(), 'info', 'SYSTEM', `Admin cleared error history.`);
       });
     }
 
@@ -538,17 +1144,21 @@
         <span class="log-msg">${escapeHtml(msg)}</span>
       `;
       terminalFeed.prepend(row);
-      // Keep terminal bounded to 300 entries in DOM
       if (terminalFeed.children.length > 300) {
         terminalFeed.removeChild(terminalFeed.lastChild);
       }
     }
 
     function escapeHtml(s) {
-      return String(s || '')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
     }
   </script>
 </body>
