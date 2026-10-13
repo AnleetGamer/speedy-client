@@ -231,14 +231,14 @@
     /* Top Metrics Grid */
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+      gap: 16px;
     }
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      padding: 22px;
+      padding: 20px;
       position: relative;
       overflow: hidden;
       transition: transform 0.2s, border-color 0.2s;
@@ -249,7 +249,7 @@
     }
     .stat-title {
       color: var(--text-muted);
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.6px;
@@ -259,7 +259,7 @@
       justify-content: space-between;
     }
     .stat-val {
-      font-size: 34px;
+      font-size: 32px;
       font-weight: 800;
       letter-spacing: -1px;
     }
@@ -572,7 +572,7 @@
 
   <!-- Main Content -->
   <main>
-    <!-- Top Metric Cards Grid -->
+    <!-- Top Metric Cards Grid (6 Live Cards) -->
     <div class="metrics-grid">
       <div class="stat-card">
         <div class="stat-title">
@@ -581,6 +581,14 @@
         </div>
         <div class="stat-val" id="val-launchers" style="color: var(--success);">0</div>
         <div class="stat-meta">Live desktop clients running right now</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">
+          <span>Total Registered Users</span>
+          <span style="font-size: 16px;">👤</span>
+        </div>
+        <div class="stat-val" id="val-users" style="color: #60a5fa;">0</div>
+        <div class="stat-meta">Durable accounts in Turso DB</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">
@@ -596,7 +604,7 @@
           <span style="font-size: 16px;">📦</span>
         </div>
         <div class="stat-val" id="val-devices">0</div>
-        <div class="stat-meta">Unique client devices recorded</div>
+        <div class="stat-meta">Unique client machines recorded</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">
@@ -640,14 +648,14 @@
         <div class="section-header">
           <div class="section-title">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-            Real-Time Live Telemetry Console
+            Real-Time Live Telemetry Console (Persisted)
           </div>
           <div style="display: flex; gap: 8px;">
             <button class="btn-action" id="btn-clear-stream">Clear Stream</button>
           </div>
         </div>
         <div class="terminal-container" id="terminal-feed">
-          <div class="log-row">
+          <div class="log-row" data-boot="true">
             <span class="log-time">[BOOT]</span>
             <span class="log-level info">SYSTEM</span>
             <span class="log-msg">Admin telemetry stream initialized. Waiting for launcher events...</span>
@@ -800,6 +808,7 @@
 
     // Stat card values
     const valLaunchers = document.getElementById('val-launchers');
+    const valUsers = document.getElementById('val-users');
     const valOnline = document.getElementById('val-online');
     const valDevices = document.getElementById('val-devices');
     const valDownloads = document.getElementById('val-downloads');
@@ -835,6 +844,42 @@
     let token = localStorage.getItem('speedy_admin_token');
     let evtSource = null;
     let cachedErrors = [];
+
+    // Stream logs persistence keys
+    const LOGS_STORAGE_KEY = 'speedy_admin_stream_logs';
+    const seenLogKeys = new Set();
+
+    function loadSavedLogs() {
+      try {
+        const raw = localStorage.getItem(LOGS_STORAGE_KEY);
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) {
+            terminalFeed.innerHTML = '';
+            for (const item of list) {
+              appendLog(item.ts, item.level, item.subsystem, item.msg, false);
+            }
+          }
+        }
+      } catch {}
+    }
+
+    function saveLogsToStorage() {
+      try {
+        const logs = [];
+        const rows = terminalFeed.querySelectorAll('.log-row');
+        for (let i = rows.length - 1; i >= 0 && logs.length < 150; i--) {
+          const r = rows[i];
+          if (r.dataset.boot) continue;
+          const ts = Number(r.getAttribute('data-ts') || Date.now());
+          const level = r.getAttribute('data-level') || 'info';
+          const subsystem = r.getAttribute('data-subsystem') || 'SYS';
+          const msg = r.getAttribute('data-msg') || r.querySelector('.log-msg')?.innerText || '';
+          logs.push({ ts, level, subsystem, msg });
+        }
+        localStorage.setItem(LOGS_STORAGE_KEY, JSON.stringify(logs));
+      } catch {}
+    }
 
     if (token) {
       initDashboard();
@@ -897,12 +942,15 @@
     });
 
     document.getElementById('btn-clear-stream').addEventListener('click', () => {
-      terminalFeed.innerHTML = '';
+      terminalFeed.innerHTML = '<div class="log-row" data-boot="true"><span class="log-time">[CLEARED]</span><span class="log-level info">SYSTEM</span><span class="log-msg">Stream cleared by admin.</span></div>';
+      localStorage.removeItem(LOGS_STORAGE_KEY);
+      seenLogKeys.clear();
     });
 
     // Dashboard Initialization
     async function initDashboard() {
       authOverlay.style.display = 'none';
+      loadSavedLogs();
       await fetchMetrics();
       startStream();
       loadErrors();
@@ -922,6 +970,7 @@
         }
         const data = await res.json();
         valLaunchers.innerText = data.onlineLaunchers || 0;
+        valUsers.innerText = data.totalUsers || 0;
         valOnline.innerText = data.onlineUsers || 0;
         valDevices.innerText = data.totalDevices || 0;
         valDownloads.innerText = data.totalDownloads || 0;
@@ -930,6 +979,47 @@
         badgeLaunchers.innerText = data.onlineLaunchers || 0;
 
         renderLaunchers(data.activeLaunchersList || []);
+
+        // Restore server-persisted activity logs across reloads
+        if (Array.isArray(data.recentLogs) && data.recentLogs.length > 0) {
+          for (const item of data.recentLogs) {
+            const { type, payload, ts } = item;
+            let level = 'info';
+            let subsys = 'BATCH';
+            let msg = '';
+            if (type === 'startup') {
+              level = 'startup';
+              subsys = 'LAUNCHER';
+              msg = `🟢 Launcher started on ${payload?.platform || 'windows'} (${payload?.deviceId || 'spd-client'}) v${payload?.version || '1.0.0'}`;
+            } else if (type === 'shutdown') {
+              level = 'shutdown';
+              subsys = 'LAUNCHER';
+              msg = `🔴 Launcher closed (${payload?.deviceId || 'spd-client'}) — Uptime: ${payload?.uptimeSeconds || 0}s`;
+            } else if (type === 'presence') {
+              level = 'social';
+              subsys = 'PRESENCE';
+              msg = `User ${payload?.userId || payload?.username} is ${payload?.status}`;
+            } else if (type === 'error') {
+              level = 'error';
+              subsys = payload?.subsystem || 'CLIENT';
+              msg = `${payload?.message || ''} ${payload?.stack ? '(' + payload.stack.slice(0, 100) + '...)' : ''}`;
+            } else if (type === 'download') {
+              level = 'download';
+              subsys = 'DOWNLOAD';
+              msg = `Downloaded asset: ${payload?.url} (${formatBytes(payload?.size)}) - ${payload?.status}`;
+            } else if (type === 'events') {
+              level = 'info';
+              subsys = 'BATCH';
+              msg = `Processed batch of ${payload?.count} telemetry event(s)`;
+            } else {
+              level = 'info';
+              subsys = (type || 'event').toUpperCase();
+              msg = JSON.stringify(payload);
+            }
+            appendLog(ts || Date.now(), level, subsys, msg, false);
+          }
+          saveLogsToStorage();
+        }
       } catch (e) {
         console.warn('Metrics refresh failed:', e);
       }
@@ -1087,6 +1177,7 @@
       evtSource.addEventListener('startup', (e) => {
         const data = JSON.parse(e.data);
         valLaunchers.innerText = data.activeLaunchers || (Number(valLaunchers.innerText) + 1);
+        badgeLaunchers.innerText = valLaunchers.innerText;
         appendLog(Date.now(), 'startup', 'LAUNCHER', `🟢 Launcher started on ${data.platform || 'windows'} (${data.deviceId || 'spd-client'}) v${data.version || '1.0.0'}`);
         fetchMetrics();
       });
@@ -1094,6 +1185,7 @@
       evtSource.addEventListener('shutdown', (e) => {
         const data = JSON.parse(e.data);
         valLaunchers.innerText = data.activeLaunchers ?? Math.max(0, Number(valLaunchers.innerText) - 1);
+        badgeLaunchers.innerText = valLaunchers.innerText;
         appendLog(Date.now(), 'shutdown', 'LAUNCHER', `🔴 Launcher closed (${data.deviceId || 'spd-client'}) — Uptime: ${data.uptimeSeconds || 0}s`);
         fetchMetrics();
       });
@@ -1133,9 +1225,18 @@
       });
     }
 
-    function appendLog(ts, level, subsystem, msg) {
+    function appendLog(ts, level, subsystem, msg, shouldSave = true) {
+      const key = `${ts}-${level}-${subsystem}-${msg.slice(0, 40)}`;
+      if (seenLogKeys.has(key)) return;
+      seenLogKeys.add(key);
+
       const row = document.createElement('div');
       row.className = 'log-row';
+      row.setAttribute('data-ts', ts);
+      row.setAttribute('data-level', level);
+      row.setAttribute('data-subsystem', subsystem);
+      row.setAttribute('data-msg', msg);
+
       const timeStr = new Date(ts).toLocaleTimeString();
       row.innerHTML = `
         <span class="log-time">[${timeStr}]</span>
@@ -1146,6 +1247,9 @@
       terminalFeed.prepend(row);
       if (terminalFeed.children.length > 300) {
         terminalFeed.removeChild(terminalFeed.lastChild);
+      }
+      if (shouldSave) {
+        saveLogsToStorage();
       }
     }
 

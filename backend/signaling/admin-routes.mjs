@@ -12,6 +12,8 @@
  *     POST /api/admin/errors/clear (clear resolved errors)
  * - Active Launcher Tracking:
  *     Tracks live desktop clients, device IDs, platforms, and uptimes.
+ * - Persistent Stream Buffer:
+ *     Keeps last 250 admin logs in memory so reloads never lose activity logs.
  */
 import crypto from 'node:crypto';
 
@@ -24,23 +26,34 @@ const sseClients = new Set(); // res objects
 // Live active desktop launchers: deviceId -> { deviceId, platform, arch, version, firstSeen, lastSeen, status }
 const activeLaunchers = new Map();
 
+// Ring buffer of recent admin activity logs so they persist across page reloads
+const recentAdminLogs = [];
+
+function recordAdminLog(entry) {
+  recentAdminLogs.push(entry);
+  if (recentAdminLogs.length > 250) recentAdminLogs.shift();
+}
+
 // 50 MB limit in bytes
 export const MAX_TELEMETRY_BYTES = 50 * 1024 * 1024;
 
-// Periodic cleanup of inactive launchers (if no batch received for > 20 minutes)
+// Periodic cleanup of inactive launchers (if no batch or ping received for > 90 seconds)
 setInterval(() => {
-  const cutoff = Date.now() - 20 * 60 * 1000;
+  const cutoff = Date.now() - 90 * 1000;
   for (const [id, info] of activeLaunchers.entries()) {
     if (info.lastSeen < cutoff) {
       activeLaunchers.delete(id);
       broadcastAdminEvent('shutdown', { deviceId: id, reason: 'timeout', activeLaunchers: activeLaunchers.size });
     }
   }
-}, 60_000);
+}, 15_000);
 
 export function broadcastAdminEvent(type, payload) {
+  const ts = payload?._ts || payload?.ts || Date.now();
+  recordAdminLog({ type, payload, ts });
+
   if (sseClients.size === 0) return;
-  const data = `event: ${type}\ndata: ${JSON.stringify({ ...payload, _ts: Date.now() })}\n\n`;
+  const data = `event: ${type}\ndata: ${JSON.stringify({ ...payload, _ts: ts })}\n\n`;
   for (const client of sseClients) {
     try {
       client.write(data);
@@ -103,9 +116,25 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
-  // 2. Telemetry Batch Ingestion
+  // 2. Direct Instant Shutdown Signal (Fast exit)
+  if (url === '/api/telemetry/shutdown' && method === 'POST') {
+    readJsonBody(req, (err, body) => {
+      const devId = body?.deviceId;
+      if (devId && activeLaunchers.has(devId)) {
+        activeLaunchers.delete(devId);
+        broadcastAdminEvent('shutdown', {
+          deviceId: devId,
+          uptimeSeconds: body?.uptimeSeconds,
+          activeLaunchers: activeLaunchers.size,
+        });
+      }
+      return json(200, { ok: true, activeLaunchers: activeLaunchers.size });
+    });
+    return true;
+  }
+
+  // 3. Telemetry Batch Ingestion
   if (url === '/api/telemetry/batch' && method === 'POST') {
-    // Check Content-Length header up front
     const contentLength = Number(req.headers['content-length'] || 0);
     if (contentLength > MAX_TELEMETRY_BYTES) {
       return json(413, { error: 'Payload exceeds 50MB safety limit' });
@@ -147,11 +176,9 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
               uptimeSeconds: ev.payload?.uptimeSeconds,
               activeLaunchers: activeLaunchers.size,
             });
-          } else {
-            // General event — refresh lastSeen if device is tracked
+          } else if (ev.type === 'launcher_heartbeat') {
             if (activeLaunchers.has(devId)) {
-              const info = activeLaunchers.get(devId);
-              info.lastSeen = Date.now();
+              activeLaunchers.get(devId).lastSeen = Date.now();
             } else if (devId !== 'anonymous-client') {
               activeLaunchers.set(devId, {
                 deviceId: devId,
@@ -162,6 +189,17 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
                 lastSeen: Date.now(),
                 status: 'online',
               });
+              broadcastAdminEvent('startup', {
+                deviceId: devId,
+                platform: ev.payload?.platform || 'windows',
+                version: ev.payload?.version || '1.0.0',
+                activeLaunchers: activeLaunchers.size,
+              });
+            }
+          } else {
+            // General event — refresh lastSeen if device is tracked
+            if (activeLaunchers.has(devId)) {
+              activeLaunchers.get(devId).lastSeen = Date.now();
             }
           }
         }
@@ -189,7 +227,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
-  // 3. Admin Metrics Summary API
+  // 4. Admin Metrics Summary API (Includes total users, active launchers, and persisted log buffer)
   if (url === '/api/admin/metrics' && method === 'GET') {
     if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
     store.getMetricsSummary().then((summary) => {
@@ -199,12 +237,13 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
         onlineLaunchers: activeLaunchers.size,
         activeLaunchersList: [...activeLaunchers.values()],
         onlineUserIds: [...sessions.keys()],
+        recentLogs: recentAdminLogs.slice(-150),
       });
     }).catch((e) => json(500, { error: e.message }));
     return true;
   }
 
-  // 4. Admin Error Center — List & Search from Turso
+  // 5. Admin Error Center — List & Search from Turso
   if (url === '/api/admin/errors' && method === 'GET') {
     if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
     const limit = Math.min(Number(reqUrl.searchParams.get('limit') || 200), 500);
@@ -228,7 +267,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
-  // 5. Admin Error Center — Export / Download Reports from Turso
+  // 6. Admin Error Center — Export / Download Reports from Turso
   if (url === '/api/admin/errors/export' && method === 'GET') {
     if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
     const format = reqUrl.searchParams.get('format') || 'json';
@@ -276,7 +315,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
-  // 6. Admin Error Center — Clear All Errors
+  // 7. Admin Error Center — Clear All Errors
   if (url === '/api/admin/errors/clear' && (method === 'POST' || method === 'DELETE')) {
     if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
     store.clearAllErrors().then(() => {
@@ -286,7 +325,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
-  // 7. Admin Downloads List API
+  // 8. Admin Downloads List API
   if (url === '/api/admin/downloads' && method === 'GET') {
     if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
     const limit = Math.min(Number(reqUrl.searchParams.get('limit') || 100), 200);
@@ -296,7 +335,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
-  // 8. Admin Live SSE Stream
+  // 9. Admin Live SSE Stream
   if (url === '/api/admin/live-stream' && method === 'GET') {
     if (!checkAdminAuth()) {
       res.writeHead(401, { 'content-type': 'text/plain' });
