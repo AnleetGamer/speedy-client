@@ -356,6 +356,13 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
       ts: Date.now()
     })}\n\n`);
 
+    // Replay recent buffered events so dashboard immediately has latest live activity
+    for (const logItem of recentAdminLogs) {
+      try {
+        res.write(`event: ${logItem.type}\ndata: ${JSON.stringify({ ...logItem.payload, _ts: logItem.ts })}\n\n`);
+      } catch {}
+    }
+
     sseClients.add(res);
 
     // Keep Render awake by sending a ping comment every 45s
