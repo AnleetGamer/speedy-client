@@ -88,6 +88,11 @@ CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, create
 CREATE INDEX IF NOT EXISTS idx_requests_to ON friend_requests(to_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, ts);
 
+-- Speedy Player Tags: optional Minecraft username mapping (§speedy-tags)
+-- Added after initial schema; ALTER TABLE ... ADD COLUMN is idempotent in libSQL.
+ALTER TABLE users ADD COLUMN minecraft_username TEXT;
+CREATE INDEX IF NOT EXISTS idx_users_mc_name ON users(minecraft_username);
+
 -- Speedy Telemetry & Admin Tables
 CREATE TABLE IF NOT EXISTS telemetry_events (
   id TEXT PRIMARY KEY,

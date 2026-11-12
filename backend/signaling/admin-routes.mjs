@@ -1,9 +1,10 @@
 /**
  * Speedy Admin Routes & Telemetry Ingestion Hub
- * 
- * - Admin credentials hardcoded per requirement:
- *     email: hausdhajt235@gmail.com
- *     pass:  yo32156%23414@#$@
+ *
+ * - Admin credentials are read from environment variables:
+ *     ADMIN_EMAIL     — the admin login email
+ *     ADMIN_PASSWORD  — the admin login password
+ *   Set these in your Render dashboard (Environment tab) or in a local .env file.
  * - SSE Live Stream: /api/admin/live-stream (pushes online/offline, downloads, errors, startup, shutdown)
  * - Telemetry Batch Ingestion: POST /api/telemetry/batch (50MB cap check)
  * - Turso Persistent Error Center:
@@ -17,8 +18,12 @@
  */
 import crypto from 'node:crypto';
 
-const ADMIN_EMAIL = 'hausdhajt235@gmail.com';
-const ADMIN_PASSWORD = 'yo32156%23414@#$@';
+const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || '';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+
+if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
+  console.warn('[admin] WARNING: ADMIN_EMAIL or ADMIN_PASSWORD env vars are not set. Admin login will be disabled until they are configured.');
+}
 
 const adminSessions = new Set(); // token strings
 const sseClients = new Set(); // res objects
@@ -68,6 +73,9 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
   const url = reqUrl.pathname;
   const method = req.method || 'GET';
 
+  // Deterministic admin token so admin session survives Render wakeups and restarts
+  const staticAdminToken = crypto.createHmac('sha256', SECRET || 'speedy-secret-fallback').update(`${ADMIN_EMAIL}:${ADMIN_PASSWORD}`).digest('hex');
+
   // Helper for json responses — MUST return true so callers
   // that do `return json(...)` propagate a truthy value back to
   // server.mjs, preventing the fall-through to serveStatic.
@@ -97,7 +105,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     const queryToken = reqUrl.searchParams.get('token');
     const authHeader = req.headers['authorization'] || '';
     const token = queryToken || authHeader.replace(/^Bearer\s+/i, '').trim();
-    if (token && adminSessions.has(token)) return true;
+    if (token && (token === staticAdminToken || adminSessions.has(token))) return true;
     return false;
   }
 
@@ -107,7 +115,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
       if (err) return json(400, { error: 'Invalid JSON' });
       const { email, password } = body || {};
       if (email === ADMIN_EMAIL && password === ADMIN_PASSWORD) {
-        const token = crypto.randomBytes(32).toString('hex');
+        const token = staticAdminToken;
         adminSessions.add(token);
         return json(200, { ok: true, token, email: ADMIN_EMAIL });
       }
@@ -176,6 +184,22 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
               uptimeSeconds: ev.payload?.uptimeSeconds,
               activeLaunchers: activeLaunchers.size,
             });
+          } else if (ev.type === 'minecraft_launch') {
+            broadcastAdminEvent('game_launch', {
+              deviceId: devId,
+              instanceId: ev.payload?.id || 'default',
+              mcVersion: ev.payload?.mcVersion || '',
+              ts: ev.ts || Date.now(),
+            });
+            if (activeLaunchers.has(devId)) activeLaunchers.get(devId).lastSeen = Date.now();
+          } else if (ev.type === 'minecraft_exit') {
+            broadcastAdminEvent('game_exit', {
+              deviceId: devId,
+              instanceId: ev.payload?.id || 'default',
+              code: ev.payload?.code ?? 0,
+              ts: ev.ts || Date.now(),
+            });
+            if (activeLaunchers.has(devId)) activeLaunchers.get(devId).lastSeen = Date.now();
           } else if (ev.type === 'launcher_heartbeat') {
             if (activeLaunchers.has(devId)) {
               activeLaunchers.get(devId).lastSeen = Date.now();
@@ -207,6 +231,7 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
         // Notify active dashboard viewers live
         if (errors.length > 0) {
           for (const errorItem of errors) {
+            broadcastAdminEvent('app_error', errorItem);
             broadcastAdminEvent('error', errorItem);
           }
         }
@@ -345,10 +370,14 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
 
     res.writeHead(200, {
       'content-type': 'text/event-stream',
-      'cache-control': 'no-cache',
+      'cache-control': 'no-cache, no-transform',
       'connection': 'keep-alive',
       'access-control-allow-origin': '*',
+      'x-accel-buffering': 'no',
     });
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
     res.write(`event: connected\ndata: ${JSON.stringify({
       status: 'connected',
       onlineUsers: sessions.size,

@@ -126,6 +126,16 @@ export function createMemoryStore() {
       const raw = privacy.get(userId);
       return raw ? JSON.parse(raw) : null;
     },
+    // ---- Speedy Player Tags ----
+    async setMinecraftUsername(userId, name) {
+      const u = users.get(userId);
+      if (u) u.minecraftUsername = name;
+    },
+    async listMinecraftUsernames() {
+      return [...users.values()]
+        .map(u => u.minecraftUsername || u.username)
+        .filter(Boolean);
+    },
     // ---- Telemetry & Admin Store Methods ----
     async recordTelemetryBatch({ events = [], errors = [], downloads = [] }) {
       if (!this._telemetryEvents) {
@@ -333,6 +343,17 @@ export function createTursoStore({ url, token }) {
     async getPrivacy(userId) {
       const rows = await one(q.getPrivacy, [userId]);
       return rows[0] ? JSON.parse(rows[0].settings) : null;
+    },
+    // ---- Speedy Player Tags ----
+    async setMinecraftUsername(userId, name) {
+      await db.exec('UPDATE users SET minecraft_username = ? WHERE id = ?', [name, userId]);
+    },
+    async listMinecraftUsernames() {
+      const r = await db.exec(
+        'SELECT COALESCE(minecraft_username, username) AS name FROM users WHERE minecraft_username IS NOT NULL OR username IS NOT NULL',
+        []
+      );
+      return rowsToObjects(r).map(row => row.name).filter(Boolean);
     },
     // ---- Telemetry & Admin Store Methods ----
     async recordTelemetryBatch({ events = [], errors = [], downloads = [] }) {

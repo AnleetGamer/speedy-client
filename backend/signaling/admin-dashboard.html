@@ -538,7 +538,7 @@
       <form id="login-form">
         <div class="input-group">
           <label for="admin-email">Admin Email</label>
-          <input type="email" id="admin-email" class="input-field" placeholder="hausdhajt235@gmail.com" required autocomplete="username">
+          <input type="email" id="admin-email" class="input-field" placeholder="admin@example.com" required autocomplete="username">
         </div>
         <div class="input-group">
           <label for="admin-pass">Password</label>
@@ -995,12 +995,20 @@
               level = 'shutdown';
               subsys = 'LAUNCHER';
               msg = `🔴 Launcher closed (${payload?.deviceId || 'spd-client'}) — Uptime: ${payload?.uptimeSeconds || 0}s`;
+            } else if (type === 'game_launch') {
+              level = 'info';
+              subsys = 'GAME';
+              msg = `🎮 Minecraft ${payload?.mcVersion || ''} launched on [${payload?.instanceId || 'default'}]`;
+            } else if (type === 'game_exit') {
+              level = 'info';
+              subsys = 'GAME';
+              msg = `🎮 Minecraft exited normally (code ${payload?.code ?? 0}) on [${payload?.instanceId || 'default'}]`;
             } else if (type === 'presence') {
               level = 'social';
               subsys = 'PRESENCE';
               msg = `User ${payload?.userId || payload?.username} is ${payload?.status}`;
-            } else if (type === 'error') {
-              level = 'error';
+            } else if (type === 'app_error' || type === 'error') {
+              level = payload?.level || 'error';
               subsys = payload?.subsystem || 'CLIENT';
               msg = `${payload?.message || ''} ${payload?.stack ? '(' + payload.stack.slice(0, 100) + '...)' : ''}`;
             } else if (type === 'download') {
@@ -1196,12 +1204,31 @@
         appendLog(Date.now(), 'social', 'PRESENCE', `User ${data.userId || data.username} is ${data.status}`);
       });
 
+      evtSource.addEventListener('game_launch', (e) => {
+        const data = JSON.parse(e.data);
+        appendLog(data.ts || Date.now(), 'info', 'GAME', `🎮 Minecraft ${data.mcVersion || ''} launched on [${data.instanceId || 'default'}]`);
+      });
+
+      evtSource.addEventListener('game_exit', (e) => {
+        const data = JSON.parse(e.data);
+        appendLog(data.ts || Date.now(), 'info', 'GAME', `🎮 Minecraft exited normally (code ${data.code ?? 0}) on [${data.instanceId || 'default'}]`);
+      });
+
+      evtSource.addEventListener('app_error', (e) => {
+        const err = JSON.parse(e.data);
+        valErrors.innerText = (Number(valErrors.innerText) || 0) + 1;
+        badgeErrors.innerText = valErrors.innerText;
+        appendLog(err.ts || Date.now(), err.level || 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
+      });
+
       evtSource.addEventListener('error', (e) => {
         if (e.data) {
-          const err = JSON.parse(e.data);
-          valErrors.innerText = (Number(valErrors.innerText) || 0) + 1;
-          badgeErrors.innerText = valErrors.innerText;
-          appendLog(err.ts || Date.now(), 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
+          try {
+            const err = JSON.parse(e.data);
+            valErrors.innerText = (Number(valErrors.innerText) || 0) + 1;
+            badgeErrors.innerText = valErrors.innerText;
+            appendLog(err.ts || Date.now(), err.level || 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
+          } catch {}
         } else {
           liveStatus.innerText = 'Reconnecting (Render sleep/wake)...';
           liveDot.style.background = 'var(--warning)';

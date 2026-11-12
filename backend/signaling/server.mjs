@@ -13,18 +13,42 @@
  *   - lightweight Turso persistence (metadata only)
  *   - serves the interactive UI preview at / (dev/demo convenience)
  *
- * Environment:
+ * Environment (set in Render dashboard or a local .env file):
  *   PORT                    (Render injects; default 8787)
  *   TURSO_DATABASE_URL      optional — memory mode when absent
  *   TURSO_AUTH_TOKEN        optional
  *   SECRET                  HMAC secret (required in production; auto-generated for dev)
  *   ANLEET_PREVIEW_DIR      directory to serve at / (optional)
+ *   ADMIN_EMAIL             admin dashboard login email
+ *   ADMIN_PASSWORD          admin dashboard login password
  */
+
+// Load .env file if present (local dev). On Render, env vars are set directly
+// in the dashboard so no .env file is needed or expected there.
+import { readFileSync } from 'node:fs';
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+try {
+  const __dir = dirname(fileURLToPath(import.meta.url));
+  const envPath = resolve(__dir, '../../.env');
+  const lines = readFileSync(envPath, 'utf8').split('\n');
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line || line.startsWith('#')) continue;
+    const eq = line.indexOf('=');
+    if (eq === -1) continue;
+    const key = line.slice(0, eq).trim();
+    const val = line.slice(eq + 1).trim().replace(/^["']|["']$/g, '');
+    if (key && !(key in process.env)) process.env[key] = val;
+  }
+} catch {
+  // No .env file — that's fine (Render, CI, etc.)
+}
+
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { fileURLToPath } from 'node:url';
 import { attachWebSocketServer } from './ws.mjs';
 import { createMemoryStore, createTursoStore } from './store.mjs';
 import { hashPassword, verifyPassword, createTokenFactory, newId } from './auth.mjs';
@@ -37,6 +61,23 @@ import { handleAdminAndTelemetry, broadcastAdminEvent } from './admin-routes.mjs
 const PORT = Number(process.env.PORT || 8787);
 const PREVIEW_DIR = process.env.ANLEET_PREVIEW_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'tools', 'preview');
 const PRESENCE_TTL_MS = 90_000;
+
+// ---------------------------------------------------------------- speedy player registry cache
+// Server-side cache so the mod endpoint never hammers the DB on every request.
+let playerListCache = { ts: 0, list: /** @type {string[]} */ ([]) };
+const PLAYER_CACHE_TTL_MS = 60_000; // 1 minute
+
+async function getSpeedyPlayerList() {
+  if (Date.now() - playerListCache.ts < PLAYER_CACHE_TTL_MS) return playerListCache.list;
+  try {
+    const list = await store.listMinecraftUsernames();
+    playerListCache = { ts: Date.now(), list };
+    return list;
+  } catch (e) {
+    console.error('[speedy] player-registry fetch failed:', e.message);
+    return playerListCache.list; // return stale on error
+  }
+}
 
 // ---------------------------------------------------------------- store
 let store;
@@ -101,10 +142,14 @@ async function friendPayloadFor(userId) {
     if (!user) continue;
     const [theirPrivacy, rawPresence] = await Promise.all([store.getPrivacy(fid), store.getPresence(fid)]);
     const filtered = filterPresence(rawPresence, theirPrivacy ?? defaultPrivacy(), 'friend');
+    const isOnline = sessions.has(fid);
     out.push({
       id: fid,
       username: user.username,
-      presence: filtered.visible && filtered.presence ? filtered.presence : { playing: false, inGame: false, online: sessions.has(fid) },
+      minecraftUsername: user.minecraft_username || user.username,
+      presence: filtered.visible && filtered.presence
+        ? { ...filtered.presence, online: isOnline, offline: !isOnline }
+        : { playing: false, inGame: false, online: isOnline, offline: !isOnline },
       canDm: filtered.canDm ?? true,
       canCall: filtered.canCall ?? true,
     });
@@ -122,12 +167,22 @@ const handlers = {
   async 'auth.register'(conn, msg) {
     const user = await store.createUser({ username: msg.username, passHash: hashPassword(msg.password) });
     await store.savePrivacy(user.id, defaultPrivacy());
+    // Optionally bind a Minecraft username at registration time
+    if (msg.minecraftUsername && typeof msg.minecraftUsername === 'string') {
+      const mcName = msg.minecraftUsername.trim().replace(/[^a-zA-Z0-9_]/g, '').slice(0, 32);
+      if (mcName) await store.setMinecraftUsername(user.id, mcName).catch(() => {});
+    }
     await finishAuth(conn, user);
   },
   async 'auth.login'(conn, msg) {
     const user = await store.getUserByUsername(msg.username);
     if (!user || !verifyPassword(msg.password, user.passHash)) {
       return sendError(conn, 'bad-credentials', 'Wrong username or password.', 'auth.login');
+    }
+    // Update Minecraft username mapping if provided (and not already set)
+    if (msg.minecraftUsername && typeof msg.minecraftUsername === 'string') {
+      const mcName = msg.minecraftUsername.trim().replace(/[^a-zA-Z0-9_]/g, '').slice(0, 32);
+      if (mcName) await store.setMinecraftUsername(user.id, mcName).catch(() => {});
     }
     await finishAuth(conn, { id: user.id, username: user.username });
   },
@@ -137,6 +192,20 @@ const handlers = {
     const user = await store.getUserById(valid.userId);
     if (!user) return sendError(conn, 'bad-token', 'Unknown account.', 'auth.token');
     await finishAuth(conn, user);
+  },
+
+  async 'account.setMinecraftUsername'(conn, msg, ctx) {
+    if (!ctx.userId) return sendError(conn, 'not-authenticated', 'Sign in first.', 'account.setMinecraftUsername');
+    if (!msg.minecraftUsername || typeof msg.minecraftUsername !== 'string') return;
+    const mcName = msg.minecraftUsername.trim().replace(/[^a-zA-Z0-9_]/g, '').slice(0, 32);
+    if (!mcName) return;
+    await store.setMinecraftUsername(ctx.userId, mcName);
+    playerListCache.ts = 0; // invalidate cache so next fetch gets fresh data
+    conn.send(encode('account.mcname.ok', { minecraftUsername: mcName }));
+  },
+
+  async 'account.mcname'(conn, msg, ctx) {
+    return this['account.setMinecraftUsername'](conn, msg, ctx);
   },
 
   async 'presence.update'(conn, msg, ctx) {
@@ -560,6 +629,23 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Public Speedy player registry — used by in-game mod for nametag badges.
+  // No auth required; returns only Minecraft usernames of registered players.
+  if (url === '/api/speedy-players') {
+    getSpeedyPlayerList().then((list) => {
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+        'cache-control': 'public, max-age=60',
+      });
+      res.end(JSON.stringify({ players: list, ts: Date.now() }));
+    }).catch(() => {
+      res.writeHead(500, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+      res.end(JSON.stringify({ players: [], error: 'server error' }));
+    });
+    return;
+  }
+
   if (url === '/healthz' || url === '/health' || url === '/health-check') {
     res.writeHead(200, { 'content-type': 'text/plain', 'access-control-allow-origin': '*' });
     res.end('ok');
@@ -572,7 +658,7 @@ const server = http.createServer((req, res) => {
       service: 'speedy-signaling',
       protocol: PROTOCOL_VERSION,
       onlineUsers: sessions.size,
-      endpoints: ['/ws', '/', '/admin', '/api/telemetry/batch']
+      endpoints: ['/ws', '/', '/admin', '/api/telemetry/batch', '/api/speedy-players']
     }));
     return;
   }
