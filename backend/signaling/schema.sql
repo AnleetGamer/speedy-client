@@ -124,3 +124,20 @@ CREATE INDEX IF NOT EXISTS idx_telemetry_type_ts ON telemetry_events(event_type,
 CREATE INDEX IF NOT EXISTS idx_client_errors_ts ON client_errors(ts);
 CREATE INDEX IF NOT EXISTS idx_download_stats_ts ON download_stats(ts);
 
+-- Quick Play Featured Servers (editable from Admin Dashboard)
+CREATE TABLE IF NOT EXISTS featured_servers (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  tag TEXT DEFAULT '',
+  tag_class TEXT DEFAULT '',
+  ip TEXT NOT NULL,
+  port INTEGER DEFAULT 25565,
+  is_official INTEGER DEFAULT 0,
+  default_motd TEXT DEFAULT '',
+  default_players TEXT DEFAULT '',
+  icon_url TEXT DEFAULT '',
+  sort_order INTEGER DEFAULT 0,
+  created INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_featured_servers_sort ON featured_servers(sort_order, created);
+

@@ -8,6 +8,61 @@
 import { createTurso, rowsToObjects } from './turso.mjs';
 import { newId } from './auth.mjs';
 
+export const DEFAULT_FEATURED_SERVERS = [
+  {
+    id: 'hypixel',
+    name: 'Hypixel Network',
+    tag: 'POPULAR',
+    tagClass: 'ok',
+    ip: 'mc.hypixel.net',
+    port: 25565,
+    isOfficial: false,
+    defaultMotd: 'Hypixel Network [1.8/1.21] · Bedwars, Skyblock, Duels',
+    defaultPlayers: '13.5K+ Online',
+    iconUrl: '',
+    sortOrder: 0,
+  },
+  {
+    id: 'donutsmp',
+    name: 'DonutSMP Network',
+    tag: 'HARDCORE SMP',
+    tagClass: 'ember',
+    ip: 'donutsmp.net',
+    port: 25565,
+    isOfficial: true,
+    defaultMotd: 'The #1 Hardcore Survival SMP · Lifesteal, Economy, PvP',
+    defaultPlayers: '16.9K+ Online',
+    iconUrl: '',
+    sortOrder: 1,
+  },
+  {
+    id: 'manacube',
+    name: 'ManaCube',
+    tag: 'SURVIVAL & PARKOUR',
+    tagClass: '',
+    ip: 'play.manacube.com',
+    port: 25565,
+    isOfficial: false,
+    defaultMotd: 'Survival, Skyblock, Islands, Olympus, Earth & Parkour',
+    defaultPlayers: '1.1K+ Online',
+    iconUrl: '',
+    sortOrder: 2,
+  },
+  {
+    id: 'cubecraft',
+    name: 'CubeCraft Games',
+    tag: 'BEDWARS & SKY',
+    tagClass: '',
+    ip: 'play.cubecraft.net',
+    port: 25565,
+    isOfficial: false,
+    defaultMotd: 'CubeCraft Games · Bedwars, SkyWars, Parkour & Custom Mini-games',
+    defaultPlayers: '320+ Online',
+    iconUrl: '',
+    sortOrder: 3,
+  },
+];
+
 export function createMemoryStore() {
   const users = new Map();            // id -> user
   const byName = new Map();           // lowercased username -> user
@@ -188,6 +243,68 @@ export function createMemoryStore() {
     },
     async listRecentDownloads(limit = 50) {
       return (this._downloadStats || []).slice(-limit).reverse();
+    },
+    // ---- Quick Play Featured Servers (Memory Mode) ----
+    async getFeaturedServers() {
+      if (!this._featuredServers) {
+        this._featuredServers = DEFAULT_FEATURED_SERVERS.map(s => ({ ...s }));
+      }
+      return this._featuredServers.slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    },
+    async saveFeaturedServers(list) {
+      if (Array.isArray(list)) {
+        this._featuredServers = list.map((s, idx) => ({
+          id: String(s.id || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId(),
+          name: String(s.name || '').trim(),
+          tag: String(s.tag || '').trim(),
+          tagClass: String(s.tagClass || '').trim(),
+          ip: String(s.ip || '').trim(),
+          port: Number(s.port || 25565),
+          isOfficial: !!s.isOfficial,
+          defaultMotd: String(s.defaultMotd || '').trim(),
+          defaultPlayers: String(s.defaultPlayers || '').trim(),
+          iconUrl: String(s.iconUrl || '').trim(),
+          sortOrder: typeof s.sortOrder === 'number' ? s.sortOrder : idx,
+        }));
+      }
+      return this.getFeaturedServers();
+    },
+    async addOrUpdateFeaturedServer(srv) {
+      if (!this._featuredServers) {
+        this._featuredServers = DEFAULT_FEATURED_SERVERS.map(s => ({ ...s }));
+      }
+      const id = String(srv.id || srv.name || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId();
+      const existingIdx = this._featuredServers.findIndex(s => s.id === id);
+      const item = {
+        id,
+        name: String(srv.name || '').trim(),
+        tag: String(srv.tag || '').trim(),
+        tagClass: String(srv.tagClass || '').trim(),
+        ip: String(srv.ip || '').trim(),
+        port: Number(srv.port || 25565),
+        isOfficial: !!srv.isOfficial,
+        defaultMotd: String(srv.defaultMotd || '').trim(),
+        defaultPlayers: String(srv.defaultPlayers || '').trim(),
+        iconUrl: String(srv.iconUrl || '').trim(),
+        sortOrder: typeof srv.sortOrder === 'number' ? srv.sortOrder : (existingIdx >= 0 ? this._featuredServers[existingIdx].sortOrder : this._featuredServers.length),
+      };
+      if (existingIdx >= 0) {
+        this._featuredServers[existingIdx] = item;
+      } else {
+        this._featuredServers.push(item);
+      }
+      return item;
+    },
+    async deleteFeaturedServer(id) {
+      if (!this._featuredServers) {
+        this._featuredServers = DEFAULT_FEATURED_SERVERS.map(s => ({ ...s }));
+      }
+      this._featuredServers = this._featuredServers.filter(s => s.id !== id);
+      return { ok: true };
+    },
+    async resetFeaturedServers() {
+      this._featuredServers = DEFAULT_FEATURED_SERVERS.map(s => ({ ...s }));
+      return this.getFeaturedServers();
     },
   };
 }
@@ -412,6 +529,117 @@ export function createTursoStore({ url, token }) {
     },
     async listRecentDownloads(limit = 50) {
       return one(q.recentDownloads, [limit]).catch(() => []);
+    },
+    // ---- Quick Play Featured Servers (Turso Persistent Mode) ----
+    async getFeaturedServers() {
+      await db.exec(`CREATE TABLE IF NOT EXISTS featured_servers (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        tag TEXT DEFAULT '',
+        tag_class TEXT DEFAULT '',
+        ip TEXT NOT NULL,
+        port INTEGER DEFAULT 25565,
+        is_official INTEGER DEFAULT 0,
+        default_motd TEXT DEFAULT '',
+        default_players TEXT DEFAULT '',
+        icon_url TEXT DEFAULT '',
+        sort_order INTEGER DEFAULT 0,
+        created INTEGER NOT NULL
+      )`, []).catch(() => {});
+
+      const rows = await one('SELECT id, name, tag, tag_class as tagClass, ip, port, is_official as isOfficial, default_motd as defaultMotd, default_players as defaultPlayers, icon_url as iconUrl, sort_order as sortOrder, created FROM featured_servers ORDER BY sort_order ASC, created ASC', []).catch(() => []);
+      if (!rows || rows.length === 0) {
+        // Seed default 4 servers
+        const now = Date.now();
+        const stmts = DEFAULT_FEATURED_SERVERS.map((s, idx) => ({
+          sql: 'INSERT INTO featured_servers (id, name, tag, tag_class, ip, port, is_official, default_motd, default_players, icon_url, sort_order, created) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+          args: [s.id, s.name, s.tag, s.tagClass, s.ip, s.port || 25565, s.isOfficial ? 1 : 0, s.defaultMotd, s.defaultPlayers, s.iconUrl || '', idx, now + idx]
+        }));
+        await db.batch(stmts).catch(() => {});
+        return DEFAULT_FEATURED_SERVERS.map(s => ({ ...s }));
+      }
+      return rows.map(r => ({
+        id: r.id,
+        name: r.name,
+        tag: r.tag || '',
+        tagClass: r.tagClass || '',
+        ip: r.ip,
+        port: Number(r.port || 25565),
+        isOfficial: Boolean(r.isOfficial),
+        defaultMotd: r.defaultMotd || '',
+        defaultPlayers: r.defaultPlayers || '',
+        iconUrl: r.iconUrl || '',
+        sortOrder: Number(r.sortOrder || 0),
+      }));
+    },
+    async saveFeaturedServers(list) {
+      if (!Array.isArray(list)) return this.getFeaturedServers();
+      await db.exec('DELETE FROM featured_servers', []).catch(() => {});
+      const now = Date.now();
+      const stmts = list.map((s, idx) => {
+        const id = String(s.id || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId();
+        return {
+          sql: 'INSERT INTO featured_servers (id, name, tag, tag_class, ip, port, is_official, default_motd, default_players, icon_url, sort_order, created) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+          args: [
+            id,
+            String(s.name || '').trim(),
+            String(s.tag || '').trim(),
+            String(s.tagClass || '').trim(),
+            String(s.ip || '').trim(),
+            Number(s.port || 25565),
+            s.isOfficial ? 1 : 0,
+            String(s.defaultMotd || '').trim(),
+            String(s.defaultPlayers || '').trim(),
+            String(s.iconUrl || '').trim(),
+            typeof s.sortOrder === 'number' ? s.sortOrder : idx,
+            now + idx
+          ]
+        };
+      });
+      if (stmts.length > 0) {
+        await db.batch(stmts);
+      }
+      return this.getFeaturedServers();
+    },
+    async addOrUpdateFeaturedServer(s) {
+      const id = String(s.id || s.name || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId();
+      await db.exec(`
+        INSERT INTO featured_servers (id, name, tag, tag_class, ip, port, is_official, default_motd, default_players, icon_url, sort_order, created)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET
+          name = excluded.name,
+          tag = excluded.tag,
+          tag_class = excluded.tag_class,
+          ip = excluded.ip,
+          port = excluded.port,
+          is_official = excluded.is_official,
+          default_motd = excluded.default_motd,
+          default_players = excluded.default_players,
+          icon_url = excluded.icon_url,
+          sort_order = excluded.sort_order
+      `, [
+        id,
+        String(s.name || '').trim(),
+        String(s.tag || '').trim(),
+        String(s.tagClass || '').trim(),
+        String(s.ip || '').trim(),
+        Number(s.port || 25565),
+        s.isOfficial ? 1 : 0,
+        String(s.defaultMotd || '').trim(),
+        String(s.defaultPlayers || '').trim(),
+        String(s.iconUrl || '').trim(),
+        Number(s.sortOrder || 0),
+        Date.now()
+      ]);
+      return { ok: true, id };
+    },
+    async deleteFeaturedServer(id) {
+      await db.exec('DELETE FROM featured_servers WHERE id = ?', [id]);
+      return { ok: true };
+    },
+    async resetFeaturedServers() {
+      await db.exec('DELETE FROM featured_servers', []).catch(() => {});
+      return this.getFeaturedServers();
     },
   };
 }

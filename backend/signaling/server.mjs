@@ -646,6 +646,22 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Public Quick Play Featured Servers — consumed by Speedy Launcher clients
+  if (url === '/api/servers/featured' || url === '/api/quick-play-servers') {
+    store.getFeaturedServers().then((servers) => {
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'access-control-allow-origin': '*',
+        'cache-control': 'public, max-age=15',
+      });
+      res.end(JSON.stringify({ ok: true, servers, ts: Date.now() }));
+    }).catch((e) => {
+      res.writeHead(500, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+      res.end(JSON.stringify({ ok: false, servers: [], error: e.message }));
+    });
+    return;
+  }
+
   if (url === '/healthz' || url === '/health' || url === '/health-check') {
     res.writeHead(200, { 'content-type': 'text/plain', 'access-control-allow-origin': '*' });
     res.end('ok');

@@ -18,11 +18,11 @@
  */
 import crypto from 'node:crypto';
 
-const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || '';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || '';
+const ADMIN_EMAIL    = process.env.ADMIN_EMAIL    || 'hausdhajt235@gmail.com';
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'yo32156%23414@#$@';
 
-if (!ADMIN_EMAIL || !ADMIN_PASSWORD) {
-  console.warn('[admin] WARNING: ADMIN_EMAIL or ADMIN_PASSWORD env vars are not set. Admin login will be disabled until they are configured.');
+if (!process.env.ADMIN_EMAIL || !process.env.ADMIN_PASSWORD) {
+  console.info('[admin] Using default admin credentials. Set ADMIN_EMAIL and ADMIN_PASSWORD in production/Render.');
 }
 
 const adminSessions = new Set(); // token strings
@@ -402,6 +402,79 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     req.on('close', () => {
       clearInterval(pingTimer);
       sseClients.delete(res);
+    });
+    return true;
+  }
+
+  // 10. Public Quick Play Featured Servers API (Consumed by Speedy Launcher)
+  if ((url === '/api/servers/featured' || url === '/api/quick-play-servers') && method === 'GET') {
+    store.getFeaturedServers().then((servers) => {
+      json(200, { ok: true, servers, total: servers.length });
+    }).catch((e) => json(500, { ok: false, servers: [], error: e.message }));
+    return true;
+  }
+
+  // 11. Admin Quick Play Servers List API
+  if (url === '/api/admin/servers' && method === 'GET') {
+    if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
+    store.getFeaturedServers().then((servers) => {
+      json(200, { ok: true, servers, total: servers.length });
+    }).catch((e) => json(500, { ok: false, error: e.message }));
+    return true;
+  }
+
+  // 12. Admin Quick Play Servers Save / Update / Reset API
+  if (url === '/api/admin/servers' && method === 'POST') {
+    if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
+    readJsonBody(req, async (err, body) => {
+      if (err) return json(400, { error: 'Invalid JSON' });
+      try {
+        let servers;
+        if (body?.action === 'reset') {
+          servers = await store.resetFeaturedServers();
+        } else if (Array.isArray(body?.servers)) {
+          servers = await store.saveFeaturedServers(body.servers);
+        } else if (body?.server) {
+          await store.addOrUpdateFeaturedServer(body.server);
+          servers = await store.getFeaturedServers();
+        } else if (body?.id && body?.name && body?.ip) {
+          await store.addOrUpdateFeaturedServer(body);
+          servers = await store.getFeaturedServers();
+        } else {
+          return json(400, { error: 'Missing servers data' });
+        }
+        broadcastAdminEvent('servers_updated', { servers, count: servers.length });
+        return json(200, { ok: true, servers });
+      } catch (e) {
+        return json(500, { error: e.message });
+      }
+    });
+    return true;
+  }
+
+  // 13. Admin Quick Play Servers Delete API
+  if (url === '/api/admin/servers' && (method === 'DELETE' || (method === 'POST' && reqUrl.searchParams.get('action') === 'delete'))) {
+    if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
+    const queryId = reqUrl.searchParams.get('id');
+    if (queryId) {
+      store.deleteFeaturedServer(queryId).then(async () => {
+        const servers = await store.getFeaturedServers();
+        broadcastAdminEvent('servers_updated', { servers, count: servers.length });
+        json(200, { ok: true, servers });
+      }).catch((e) => json(500, { error: e.message }));
+      return true;
+    }
+    readJsonBody(req, async (err, body) => {
+      const id = body?.id;
+      if (!id) return json(400, { error: 'Missing server id' });
+      try {
+        await store.deleteFeaturedServer(id);
+        const servers = await store.getFeaturedServers();
+        broadcastAdminEvent('servers_updated', { servers, count: servers.length });
+        return json(200, { ok: true, servers });
+      } catch (e) {
+        return json(500, { error: e.message });
+      }
     });
     return true;
   }

@@ -640,6 +640,10 @@
       <button class="tab-btn" data-tab="tab-downloads">
         <span>📊 Downloads Log</span>
       </button>
+      <button class="tab-btn" data-tab="tab-servers">
+        <span>🎮 Quick Play Servers</span>
+        <span class="tab-badge" id="badge-servers">0</span>
+      </button>
     </div>
 
     <!-- Tab 1: Live Activity Stream -->
@@ -770,6 +774,48 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab 5: Quick Play Servers Management -->
+    <div class="tab-pane" id="tab-servers">
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            Quick Play Featured Minecraft Servers
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action primary" id="btn-add-server">
+              <span>+ Add Server</span>
+            </button>
+            <button class="btn-action" id="btn-reset-servers" title="Reset to standard defaults">
+              <span>Reset Defaults</span>
+            </button>
+            <button class="btn-action" id="btn-refresh-servers">Refresh</button>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          These servers appear directly on the Speedy Launcher Home screen under <strong>Quick Play</strong>. Changes saved here take effect immediately across all connected launchers worldwide.
+        </p>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 60px;">Order</th>
+                <th style="width: 50px;">Icon</th>
+                <th>Server Name &amp; ID</th>
+                <th>Address &amp; Port</th>
+                <th>Badge / Tag</th>
+                <th>Type</th>
+                <th style="width: 200px; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="servers-tbody">
+              <tr><td colspan="7" class="table-empty">Loading servers...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
 
   <!-- Stack Trace Modal -->
@@ -793,6 +839,75 @@
         <button class="btn-action primary" id="modal-copy">Copy Stack</button>
         <button class="btn-action" id="modal-dismiss">Close</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Server Modal -->
+  <div id="server-modal" style="position: fixed; inset: 0; background: rgba(7, 8, 12, 0.85); backdrop-filter: blur(10px); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px;">
+    <div class="modal-box" style="max-width: 580px;">
+      <div class="modal-header">
+        <div style="font-weight: 700; font-size: 15px;" id="server-modal-title">Edit Quick Play Server</div>
+        <button class="btn-action" id="server-modal-close" type="button">&times;</button>
+      </div>
+      <form id="server-form">
+        <div class="modal-body" style="gap: 14px;">
+          <input type="hidden" id="server-edit-id" />
+          <div class="input-group">
+            <label for="server-name">Server Name *</label>
+            <input type="text" id="server-name" class="input-field" placeholder="e.g. Hypixel Network" required />
+          </div>
+          <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+            <div class="input-group">
+              <label for="server-ip">Server Address (Host / IP) *</label>
+              <input type="text" id="server-ip" class="input-field" placeholder="e.g. mc.hypixel.net" required />
+            </div>
+            <div class="input-group">
+              <label for="server-port">Port</label>
+              <input type="number" id="server-port" class="input-field" placeholder="25565" value="25565" />
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="input-group">
+              <label for="server-tag">Badge Tag (e.g. POPULAR, HARDCORE SMP)</label>
+              <input type="text" id="server-tag" class="input-field" placeholder="POPULAR" />
+            </div>
+            <div class="input-group">
+              <label for="server-tagclass">Tag Style</label>
+              <select id="server-tagclass" class="input-field" style="background: #151926;">
+                <option value="ok">Green (ok)</option>
+                <option value="ember">Orange (ember)</option>
+                <option value="">Neutral / None</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="server-motd">Fallback MOTD Description</label>
+            <input type="text" id="server-motd" class="input-field" placeholder="Hypixel Network [1.8/1.21] · Bedwars, Skyblock" />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="input-group">
+              <label for="server-players">Fallback Player Display</label>
+              <input type="text" id="server-players" class="input-field" placeholder="10K+ Online" />
+            </div>
+            <div class="input-group">
+              <label for="server-official">Official Server</label>
+              <select id="server-official" class="input-field" style="background: #151926;">
+                <option value="false">Community / Partner</option>
+                <option value="true">Official Speedy Server</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="server-icon">Custom Icon URL (optional, defaults to built-in logo)</label>
+            <input type="text" id="server-icon" class="input-field" placeholder="https://... or leave blank" />
+          </div>
+          <div id="server-form-error" style="color: var(--danger); font-size: 13px; display: none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-action" id="server-modal-cancel">Cancel</button>
+          <button type="submit" class="btn-action primary" id="server-modal-save">Save Server</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -831,6 +946,21 @@
     const downloadsTbody = document.getElementById('downloads-tbody');
     const btnRefreshLaunchers = document.getElementById('btn-refresh-launchers');
     const btnRefreshDownloads = document.getElementById('btn-refresh-downloads');
+
+    // Quick Play Servers elements
+    const serversTbody = document.getElementById('servers-tbody');
+    const badgeServers = document.getElementById('badge-servers');
+    const btnAddServer = document.getElementById('btn-add-server');
+    const btnResetServers = document.getElementById('btn-reset-servers');
+    const btnRefreshServers = document.getElementById('btn-refresh-servers');
+    const serverModal = document.getElementById('server-modal');
+    const serverForm = document.getElementById('server-form');
+    const serverModalTitle = document.getElementById('server-modal-title');
+    const serverModalClose = document.getElementById('server-modal-close');
+    const serverModalCancel = document.getElementById('server-modal-cancel');
+    const serverFormError = document.getElementById('server-form-error');
+
+    let cachedServers = [];
 
     // Modal elements
     const stackModal = document.getElementById('stack-modal');
@@ -922,6 +1052,7 @@
       fetchMetrics();
       loadErrors();
       loadDownloads();
+      loadServers();
     });
 
     // Tab Switching
@@ -934,6 +1065,7 @@
         document.getElementById(targetId)?.classList.add('active');
         if (targetId === 'tab-errors') loadErrors();
         if (targetId === 'tab-downloads') loadDownloads();
+        if (targetId === 'tab-servers') loadServers();
       });
     });
 
@@ -954,6 +1086,7 @@
       await fetchMetrics();
       startStream();
       loadErrors();
+      loadServers();
       setInterval(fetchMetrics, 12000); // 12s metrics refresh
     }
 
@@ -1165,6 +1298,233 @@
       setTimeout(() => modalCopy.innerText = 'Copy Stack', 2000);
     });
 
+    // Quick Play Servers Management
+    async function loadServers() {
+      try {
+        const res = await fetch('/api/admin/servers', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) {
+          localStorage.removeItem('speedy_admin_token');
+          location.reload();
+          return;
+        }
+        const data = await res.json();
+        cachedServers = Array.isArray(data?.servers) ? data.servers : [];
+        badgeServers.innerText = cachedServers.length;
+        renderServersTable(cachedServers);
+      } catch {
+        serversTbody.innerHTML = '<tr><td colspan="7" class="table-empty" style="color: var(--danger);">Failed to load Quick Play servers.</td></tr>';
+      }
+    }
+
+    function renderServersTable(servers) {
+      if (!servers || servers.length === 0) {
+        serversTbody.innerHTML = '<tr><td colspan="7" class="table-empty">No Quick Play servers configured. Click "+ Add Server" or "Reset Defaults".</td></tr>';
+        return;
+      }
+      serversTbody.innerHTML = servers.map((s, idx) => {
+        const portStr = s.port && s.port !== 25565 ? `:${s.port}` : '';
+        const fullAddr = `${escapeHtml(s.ip)}${portStr}`;
+        const tagBadge = s.tag ? `<span class="badge ${s.tagClass || ''}" style="font-size: 10px;">${escapeHtml(s.tag)}</span>` : '<span style="color: var(--text-muted); font-size: 11px;">—</span>';
+        const typeBadge = s.isOfficial
+          ? '<span class="badge badge-online" style="font-size: 10px;">OFFICIAL</span>'
+          : '<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 10px;">COMMUNITY</span>';
+        const iconSrc = s.iconUrl || `/assets/servers/${encodeURIComponent(s.id)}.png`;
+        const initial = (s.name || 'S').charAt(0).toUpperCase();
+
+        return `
+          <tr>
+            <td style="font-family: var(--mono); color: var(--text-muted); font-size: 12px; font-weight: 700;">#${idx + 1}</td>
+            <td>
+              <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--card-border);">
+                <img src="${iconSrc}" alt="" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" />
+                <span style="display: none; font-size: 12px; font-weight: 800; color: var(--accent);">${initial}</span>
+              </div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #fff;">${escapeHtml(s.name)}</div>
+              <div style="font-family: var(--mono); font-size: 11px; color: var(--text-muted);">id: ${escapeHtml(s.id)}</div>
+            </td>
+            <td>
+              <code style="color: #93c5fd; font-size: 12.5px;">${fullAddr}</code>
+              ${s.defaultMotd ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.defaultMotd)}</div>` : ''}
+            </td>
+            <td>${tagBadge}</td>
+            <td>${typeBadge}</td>
+            <td style="text-align: right;">
+              <div style="display: inline-flex; gap: 4px; align-items: center;">
+                <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3; cursor:default;"' : ''} onclick="moveServer('${escapeHtml(s.id)}', -1)">↑</button>
+                <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" title="Move Down" ${idx === servers.length - 1 ? 'disabled style="opacity:0.3; cursor:default;"' : ''} onclick="moveServer('${escapeHtml(s.id)}', 1)">↓</button>
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="editServer('${escapeHtml(s.id)}')">Edit</button>
+                <button class="btn-action danger" style="padding: 4px 8px; font-size: 11px;" title="Delete" onclick="deleteServer('${escapeHtml(s.id)}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.openServerModal = function(server = null) {
+      serverFormError.style.display = 'none';
+      if (server) {
+        serverModalTitle.innerText = `Edit: ${server.name}`;
+        document.getElementById('server-edit-id').value = server.id || '';
+        document.getElementById('server-name').value = server.name || '';
+        document.getElementById('server-ip').value = server.ip || '';
+        document.getElementById('server-port').value = server.port ?? 25565;
+        document.getElementById('server-tag').value = server.tag || '';
+        document.getElementById('server-tagclass').value = server.tagClass || '';
+        document.getElementById('server-motd').value = server.defaultMotd || '';
+        document.getElementById('server-players').value = server.defaultPlayers || '';
+        document.getElementById('server-official').value = server.isOfficial ? 'true' : 'false';
+        document.getElementById('server-icon').value = server.iconUrl || '';
+      } else {
+        serverModalTitle.innerText = 'Add Quick Play Server';
+        serverForm.reset();
+        document.getElementById('server-edit-id').value = '';
+        document.getElementById('server-port').value = '25565';
+        document.getElementById('server-tagclass').value = 'ok';
+        document.getElementById('server-official').value = 'false';
+      }
+      serverModal.style.display = 'flex';
+    };
+
+    window.closeServerModal = function() {
+      serverModal.style.display = 'none';
+    };
+
+    window.editServer = function(id) {
+      const s = cachedServers.find(x => x.id === id);
+      if (s) openServerModal(s);
+    };
+
+    window.deleteServer = async function(id) {
+      const s = cachedServers.find(x => x.id === id);
+      const name = s ? s.name : id;
+      if (!confirm(`Are you sure you want to remove "${name}" from Quick Play?`)) return;
+      try {
+        const res = await fetch(`/api/admin/servers?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          loadServers();
+        } else {
+          alert('Failed to delete server.');
+        }
+      } catch {
+        alert('Network error deleting server.');
+      }
+    };
+
+    window.moveServer = async function(id, dir) {
+      const idx = cachedServers.findIndex(x => x.id === id);
+      if (idx === -1) return;
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= cachedServers.length) return;
+
+      const next = [...cachedServers];
+      const temp = next[idx];
+      next[idx] = next[targetIdx];
+      next[targetIdx] = temp;
+
+      try {
+        const res = await fetch('/api/admin/servers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ servers: next })
+        });
+        if (res.ok) {
+          cachedServers = next;
+          renderServersTable(cachedServers);
+        }
+      } catch (err) {
+        console.warn('Reorder failed:', err);
+      }
+    };
+
+    btnAddServer.addEventListener('click', () => openServerModal());
+    serverModalClose.addEventListener('click', closeServerModal);
+    serverModalCancel.addEventListener('click', closeServerModal);
+    btnRefreshServers.addEventListener('click', loadServers);
+
+    btnResetServers.addEventListener('click', async () => {
+      if (!confirm('Reset Quick Play servers to default list (Hypixel, DonutSMP, ManaCube, CubeCraft)?')) return;
+      try {
+        const res = await fetch('/api/admin/servers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action: 'reset' })
+        });
+        if (res.ok) {
+          loadServers();
+        }
+      } catch {
+        alert('Reset failed.');
+      }
+    });
+
+    serverForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      serverFormError.style.display = 'none';
+
+      const existingId = document.getElementById('server-edit-id').value.trim();
+      const name = document.getElementById('server-name').value.trim();
+      const ip = document.getElementById('server-ip').value.trim();
+      const portRaw = document.getElementById('server-port').value.trim();
+      const tag = document.getElementById('server-tag').value.trim();
+      const tagClass = document.getElementById('server-tagclass').value;
+      const defaultMotd = document.getElementById('server-motd').value.trim();
+      const defaultPlayers = document.getElementById('server-players').value.trim() || 'Online';
+      const isOfficial = document.getElementById('server-official').value === 'true';
+      const iconUrl = document.getElementById('server-icon').value.trim() || undefined;
+
+      const port = portRaw ? parseInt(portRaw, 10) : 25565;
+      const id = existingId || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `server-${Date.now()}`;
+
+      const serverPayload = {
+        id,
+        name,
+        ip,
+        port,
+        tag,
+        tagClass,
+        defaultMotd,
+        defaultPlayers,
+        isOfficial,
+        iconUrl
+      };
+
+      try {
+        const res = await fetch('/api/admin/servers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ server: serverPayload })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeServerModal();
+          loadServers();
+        } else {
+          serverFormError.innerText = data.error || 'Failed to save server';
+          serverFormError.style.display = 'block';
+        }
+      } catch {
+        serverFormError.innerText = 'Network error saving server';
+        serverFormError.style.display = 'block';
+      }
+    });
+
     // SSE Stream
     function startStream() {
       if (evtSource) evtSource.close();
@@ -1249,6 +1609,11 @@
 
       evtSource.addEventListener('errors_cleared', () => {
         appendLog(Date.now(), 'info', 'SYSTEM', `Admin cleared error history.`);
+      });
+
+      evtSource.addEventListener('servers_updated', () => {
+        appendLog(Date.now(), 'info', 'SERVERS', `Quick Play servers list was updated.`);
+        loadServers();
       });
     }
 
