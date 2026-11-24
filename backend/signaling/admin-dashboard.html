@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Speedy Client — Admin Control & Telemetry Center</title>
+  <title>Speedy Client — Admin Control &amp; Telemetry Center</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -35,7 +35,7 @@
       display: flex;
       flex-direction: column;
       overflow-x: hidden;
-      background-image: 
+      background-image:
         radial-gradient(circle at 10% 15%, rgba(99, 102, 241, 0.09) 0%, transparent 45%),
         radial-gradient(circle at 90% 85%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
         radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.03) 0%, transparent 60%);
@@ -98,6 +98,7 @@
       color: #fff;
       font-size: 14px;
       outline: none;
+      font-family: var(--font);
       transition: all 0.2s;
     }
     .input-field:focus {
@@ -115,6 +116,7 @@
       font-size: 14px;
       cursor: pointer;
       margin-top: 10px;
+      font-family: var(--font);
       transition: all 0.2s;
     }
     .btn-submit:hover {
@@ -128,9 +130,23 @@
       display: none;
     }
 
+    /* Health Banner */
+    #health-banner {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 40px;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+    #health-banner.healthy { background: rgba(16, 185, 129, 0.08); color: #34d399; }
+    #health-banner.warning { background: rgba(245, 158, 11, 0.08); color: #fbbf24; }
+    #health-banner.critical { background: rgba(239, 68, 68, 0.1); color: #f87171; }
+
     /* Main Header */
     header {
-      padding: 18px 40px;
+      padding: 16px 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -167,6 +183,11 @@
       border-radius: 20px;
       border: 1px solid var(--card-border);
     }
+    .refresh-info {
+      font-size: 11px;
+      color: var(--text-muted);
+      opacity: 0.7;
+    }
     .pulse-dot {
       width: 8px;
       height: 8px;
@@ -174,6 +195,7 @@
       background: var(--success);
       box-shadow: 0 0 10px var(--success);
       animation: pulse 2s infinite;
+      flex-shrink: 0;
     }
     @keyframes pulse {
       0% { opacity: 0.4; }
@@ -183,13 +205,13 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
     .btn-action {
       background: rgba(255, 255, 255, 0.05);
       border: 1px solid var(--card-border);
       color: var(--text);
-      padding: 8px 16px;
+      padding: 8px 14px;
       border-radius: 8px;
       font-size: 12px;
       font-weight: 600;
@@ -197,7 +219,9 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      font-family: var(--font);
       transition: all 0.2s;
+      white-space: nowrap;
     }
     .btn-action:hover {
       background: rgba(255, 255, 255, 0.1);
@@ -216,29 +240,34 @@
       color: var(--danger);
       border-color: rgba(239, 68, 68, 0.4);
     }
+    .btn-action:disabled {
+      opacity: 0.4;
+      cursor: default;
+      pointer-events: none;
+    }
 
     /* Main Content Container */
     main {
-      padding: 32px 40px;
+      padding: 28px 40px;
       max-width: 1500px;
       margin: 0 auto;
       width: 100%;
       display: flex;
       flex-direction: column;
-      gap: 28px;
+      gap: 24px;
     }
 
     /* Top Metrics Grid */
     .metrics-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
-      gap: 16px;
+      gap: 14px;
     }
     .stat-card {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
       border-radius: 16px;
-      padding: 20px;
+      padding: 18px 20px;
       position: relative;
       overflow: hidden;
       transition: transform 0.2s, border-color 0.2s;
@@ -262,26 +291,70 @@
       font-size: 32px;
       font-weight: 800;
       letter-spacing: -1px;
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .stat-val.bump {
+      transform: scale(1.12);
+      opacity: 0.85;
     }
     .stat-meta {
-      margin-top: 8px;
-      font-size: 12px;
+      margin-top: 6px;
+      font-size: 11.5px;
       color: var(--text-muted);
     }
+    /* Platform pills inside launcher card */
+    .platform-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 8px;
+    }
+    .platform-pill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 20px;
+      font-family: var(--mono);
+    }
+    .platform-pill.win { background: rgba(59,130,246,0.15); color: #60a5fa; }
+    .platform-pill.linux { background: rgba(245,158,11,0.15); color: #fbbf24; }
+    .platform-pill.mac { background: rgba(168,85,247,0.15); color: #c084fc; }
+    /* Download rate bar */
+    .rate-bar-wrap {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rate-bar {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .rate-bar-fill {
+      height: 100%;
+      background: var(--success);
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+    .rate-label { font-size: 11px; color: var(--success); font-weight: 700; flex-shrink: 0; }
 
     /* Navigation Tabs */
     .tabs-bar {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       border-bottom: 1px solid var(--card-border);
       padding-bottom: 12px;
+      flex-wrap: wrap;
     }
     .tab-btn {
       background: transparent;
       border: none;
       color: var(--text-muted);
-      padding: 10px 18px;
+      padding: 9px 16px;
       border-radius: 10px;
       font-size: 13px;
       font-weight: 700;
@@ -289,6 +362,7 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      font-family: var(--font);
       transition: all 0.2s;
     }
     .tab-btn:hover {
@@ -325,76 +399,116 @@
       overflow: hidden;
     }
     .section-header {
-      padding: 16px 24px;
+      padding: 14px 24px;
       border-bottom: 1px solid var(--card-border);
       display: flex;
       align-items: center;
       justify-content: space-between;
       background: rgba(255, 255, 255, 0.015);
+      flex-wrap: wrap;
+      gap: 10px;
     }
     .section-title {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
       display: flex;
       align-items: center;
       gap: 10px;
     }
 
+    /* Stats summary row (error subsystems, version dist, etc.) */
+    .stats-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(255,255,255,0.01);
+    }
+    .stats-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+    .stats-pill .sp-label { color: var(--text-muted); }
+    .stats-pill .sp-val { font-weight: 700; color: #fff; font-family: var(--mono); }
+    .stats-pill .sp-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* Stream controls bar */
+    .stream-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .toggle-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .toggle-label input[type="checkbox"] { accent-color: var(--accent); }
+
     /* Live Stream Console */
     .terminal-container {
       background: #050608;
-      padding: 16px;
+      padding: 14px;
       font-family: var(--mono);
       font-size: 12px;
-      max-height: 480px;
+      max-height: 500px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
     }
     .log-row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       line-height: 1.5;
-      padding: 5px 8px;
-      border-radius: 6px;
+      padding: 4px 7px;
+      border-radius: 5px;
       transition: background 0.15s;
+      align-items: flex-start;
     }
-    .log-row:hover {
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .log-time {
-      color: #6b7280;
-      flex-shrink: 0;
-    }
+    .log-row:hover { background: rgba(255, 255, 255, 0.04); }
+    .log-time { color: #6b7280; flex-shrink: 0; font-size: 11px; padding-top: 1px; }
+    .log-icon { flex-shrink: 0; font-size: 13px; line-height: 1.4; }
     .log-level {
       font-weight: 700;
       flex-shrink: 0;
-      padding: 0 6px;
+      padding: 1px 6px;
       border-radius: 4px;
-      font-size: 11px;
+      font-size: 10px;
+      align-self: flex-start;
+      margin-top: 2px;
     }
-    .log-level.startup  { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-    .log-level.shutdown { background: rgba(239, 68, 68, 0.2); color: #f87171; }
-    .log-level.error    { background: rgba(239, 68, 68, 0.25); color: #fca5a5; }
-    .log-level.download { background: rgba(59, 130, 246, 0.2); color: #93c5fd; }
-    .log-level.social   { background: rgba(168, 85, 247, 0.2); color: #d8b4fe; }
-    .log-level.info     { background: rgba(99, 102, 241, 0.2); color: #a5b4fc; }
-    .log-subsys {
-      color: #9ca3af;
-      flex-shrink: 0;
-    }
-    .log-msg {
-      color: #e5e7eb;
-      word-break: break-all;
-    }
+    .log-level.startup  { background: rgba(16,185,129,0.2); color: #34d399; }
+    .log-level.shutdown { background: rgba(239,68,68,0.2); color: #f87171; }
+    .log-level.error    { background: rgba(239,68,68,0.25); color: #fca5a5; }
+    .log-level.download { background: rgba(59,130,246,0.2); color: #93c5fd; }
+    .log-level.social   { background: rgba(168,85,247,0.2); color: #d8b4fe; }
+    .log-level.info     { background: rgba(99,102,241,0.2); color: #a5b4fc; }
+    .log-subsys { color: #9ca3af; flex-shrink: 0; font-size: 11px; padding-top: 2px; }
+    .log-msg { color: #e5e7eb; word-break: break-all; }
 
     /* Search & Filter Controls */
     .filter-bar {
-      padding: 14px 20px;
+      padding: 12px 20px;
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       background: rgba(255, 255, 255, 0.02);
       border-bottom: 1px solid var(--card-border);
       flex-wrap: wrap;
@@ -406,9 +520,12 @@
       border-radius: 8px;
       color: #fff;
       font-size: 13px;
+      font-family: var(--font);
       outline: none;
-      min-width: 260px;
+      min-width: 240px;
+      transition: border-color 0.2s;
     }
+    .filter-input:focus { border-color: var(--accent); }
     .filter-select {
       padding: 8px 12px;
       background: #11131c;
@@ -416,8 +533,38 @@
       border-radius: 8px;
       color: #fff;
       font-size: 13px;
+      font-family: var(--font);
       outline: none;
       cursor: pointer;
+    }
+
+    /* Launchers grid summary */
+    .launchers-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 10px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(255,255,255,0.01);
+    }
+    .summary-item {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 14px;
+    }
+    .summary-item .si-label { font-size: 11px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .summary-item .si-val { font-size: 18px; font-weight: 800; color: #fff; font-family: var(--mono); }
+    .summary-item .si-sub { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+    /* Downloads summary */
+    .dl-summary {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 14px 24px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(255,255,255,0.01);
     }
 
     /* Tables */
@@ -428,7 +575,7 @@
     }
     .data-table th {
       text-align: left;
-      padding: 12px 18px;
+      padding: 11px 18px;
       background: rgba(255, 255, 255, 0.02);
       color: var(--text-muted);
       font-size: 11px;
@@ -438,16 +585,15 @@
       border-bottom: 1px solid var(--card-border);
     }
     .data-table td {
-      padding: 12px 18px;
+      padding: 11px 18px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       color: #e5e7eb;
     }
-    .data-table tr:hover td {
-      background: rgba(255, 255, 255, 0.02);
-    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: rgba(255, 255, 255, 0.02); }
     .table-empty {
       text-align: center;
-      padding: 40px;
+      padding: 48px;
       color: var(--text-muted);
       font-size: 13px;
     }
@@ -461,14 +607,14 @@
       font-weight: 700;
       font-family: var(--mono);
     }
-    .badge-windows { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
-    .badge-linux   { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-    .badge-darwin  { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
-    .badge-online  { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-    .badge-offline { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-windows { background: rgba(59,130,246,0.15); color: #60a5fa; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-linux   { background: rgba(245,158,11,0.15); color: #fbbf24; border: 1px solid rgba(245,158,11,0.3); }
+    .badge-darwin  { background: rgba(168,85,247,0.15); color: #c084fc; border: 1px solid rgba(168,85,247,0.3); }
+    .badge-online  { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
+    .badge-offline { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
 
-    /* Modal */
-    #stack-modal {
+    /* Modals */
+    .modal-overlay {
       position: fixed;
       inset: 0;
       background: rgba(7, 8, 12, 0.85);
@@ -479,6 +625,7 @@
       justify-content: center;
       padding: 20px;
     }
+    .modal-overlay.open { display: flex; }
     .modal-box {
       background: #0d0f17;
       border: 1px solid var(--card-border);
@@ -489,7 +636,7 @@
       overflow: hidden;
       display: flex;
       flex-direction: column;
-      max-height: 85vh;
+      max-height: 90vh;
     }
     .modal-header {
       padding: 16px 24px;
@@ -505,9 +652,37 @@
       flex-direction: column;
       gap: 14px;
     }
+    /* Modal form fields */
+    .modal-field-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--text-muted);
+      display: block;
+      margin-bottom: 5px;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 10px 13px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 9px;
+      color: #fff;
+      font-size: 13.5px;
+      font-family: var(--font);
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      box-sizing: border-box;
+    }
+    .modal-input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    textarea.modal-input { resize: vertical; min-height: 72px; }
     .code-block {
       background: #050609;
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255,255,255,0.06);
       border-radius: 10px;
       padding: 16px;
       font-family: var(--mono);
@@ -524,7 +699,16 @@
       align-items: center;
       justify-content: flex-end;
       gap: 10px;
-      background: rgba(255, 255, 255, 0.01);
+      background: rgba(255,255,255,0.01);
+    }
+    .form-error {
+      display: none;
+      padding: 8px 12px;
+      background: rgba(239,68,68,0.15);
+      border: 1px solid var(--danger);
+      border-radius: 6px;
+      color: #fca5a5;
+      font-size: 12px;
     }
   </style>
 </head>
@@ -534,7 +718,7 @@
   <div id="auth-overlay">
     <div class="auth-card">
       <div class="auth-logo">Speedy Control</div>
-      <div class="auth-subtitle">Restricted Administrative Monitoring & Telemetry</div>
+      <div class="auth-subtitle">Restricted Administrative Monitoring &amp; Telemetry</div>
       <form id="login-form">
         <div class="input-group">
           <label for="admin-email">Admin Email</label>
@@ -550,6 +734,13 @@
     </div>
   </div>
 
+  <!-- System Health Banner -->
+  <div id="health-banner" style="display:none;">
+    <span id="health-icon">✅</span>
+    <span id="health-text">System nominal</span>
+    <span style="margin-left:auto; font-size:11px; opacity:0.6;" id="health-refresh"></span>
+  </div>
+
   <!-- Header -->
   <header>
     <div class="header-left">
@@ -561,18 +752,19 @@
         <div class="pulse-dot" id="live-dot"></div>
         <span id="live-status">Connecting to Render...</span>
       </div>
+      <span class="refresh-info" id="last-refresh-label"></span>
       <button class="btn-action primary" id="btn-quick-export">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
         Download Errors
       </button>
-      <button class="btn-action" id="btn-refresh">Refresh</button>
+      <button class="btn-action" id="btn-refresh">↺ Refresh All</button>
       <button class="btn-action danger" id="btn-logout">Exit Session</button>
     </div>
   </header>
 
   <!-- Main Content -->
   <main>
-    <!-- Top Metric Cards Grid (6 Live Cards) -->
+    <!-- Top Metric Cards Grid -->
     <div class="metrics-grid">
       <div class="stat-card">
         <div class="stat-title">
@@ -580,7 +772,8 @@
           <span style="font-size: 16px;">💻</span>
         </div>
         <div class="stat-val" id="val-launchers" style="color: var(--success);">0</div>
-        <div class="stat-meta">Live desktop clients running right now</div>
+        <div class="stat-meta" id="meta-launchers">Live desktop clients running right now</div>
+        <div class="platform-pills" id="platform-pills"></div>
       </div>
       <div class="stat-card">
         <div class="stat-title">
@@ -596,7 +789,7 @@
           <span style="font-size: 16px;">👥</span>
         </div>
         <div class="stat-val" id="val-online" style="color: #818cf8;">0</div>
-        <div class="stat-meta">Active WebSockets in voice & chat</div>
+        <div class="stat-meta">Active WebSockets in voice &amp; chat</div>
       </div>
       <div class="stat-card">
         <div class="stat-title">
@@ -612,7 +805,11 @@
           <span style="font-size: 16px;">📥</span>
         </div>
         <div class="stat-val" id="val-downloads">0</div>
-        <div class="stat-meta">Total client mod & asset downloads</div>
+        <div class="stat-meta">Total client mod &amp; asset downloads</div>
+        <div class="rate-bar-wrap" id="dl-rate-wrap" style="display:none;">
+          <div class="rate-bar"><div class="rate-bar-fill" id="dl-rate-fill" style="width:0%"></div></div>
+          <span class="rate-label" id="dl-rate-label">0% ok</span>
+        </div>
       </div>
       <div class="stat-card" style="cursor: pointer;" id="card-errors-jump">
         <div class="stat-title">
@@ -627,10 +824,10 @@
     <!-- Navigation Tabs -->
     <div class="tabs-bar">
       <button class="tab-btn active" data-tab="tab-stream">
-        <span>📡 Live Activity Stream</span>
+        <span>📡 Live Stream</span>
       </button>
       <button class="tab-btn" data-tab="tab-errors">
-        <span>🐞 Turso Error Center</span>
+        <span>🐞 Error Center</span>
         <span class="tab-badge" id="badge-errors">0</span>
       </button>
       <button class="tab-btn" data-tab="tab-launchers">
@@ -641,11 +838,11 @@
         <span>📊 Downloads Log</span>
       </button>
       <button class="tab-btn" data-tab="tab-servers">
-        <span>🎮 Quick Play Servers</span>
+        <span>🎮 Quick Play</span>
         <span class="tab-badge" id="badge-servers">0</span>
       </button>
       <button class="tab-btn" data-tab="tab-news">
-        <span>📰 News &amp; Announcements</span>
+        <span>📰 News</span>
         <span class="tab-badge" id="badge-news">0</span>
       </button>
     </div>
@@ -655,16 +852,21 @@
       <div class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
-            Real-Time Live Telemetry Console (Persisted)
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+            Real-Time Telemetry Console
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-action" id="btn-clear-stream">Clear Stream</button>
+          <div class="stream-controls">
+            <label class="toggle-label">
+              <input type="checkbox" id="chk-autoscroll" checked>
+              Auto-scroll
+            </label>
+            <button class="btn-action" id="btn-clear-stream">Clear</button>
           </div>
         </div>
         <div class="terminal-container" id="terminal-feed">
           <div class="log-row" data-boot="true">
             <span class="log-time">[BOOT]</span>
+            <span class="log-icon">🔵</span>
             <span class="log-level info">SYSTEM</span>
             <span class="log-msg">Admin telemetry stream initialized. Waiting for launcher events...</span>
           </div>
@@ -672,22 +874,24 @@
       </div>
     </div>
 
-    <!-- Tab 2: Turso Error Center -->
+    <!-- Tab 2: Error Center -->
     <div class="tab-pane" id="tab-errors">
       <div class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
             Turso Persistent Client Errors
           </div>
-          <div style="display: flex; gap: 8px;">
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
             <button class="btn-action primary" id="btn-export-json">Download JSON</button>
             <button class="btn-action" id="btn-export-csv">Download CSV</button>
-            <button class="btn-action danger" id="btn-clear-errors">Clear Errors</button>
+            <button class="btn-action danger" id="btn-clear-errors">Clear All</button>
           </div>
         </div>
+        <!-- Error subsystem summary row (populated dynamically) -->
+        <div class="stats-row" id="error-subsys-row" style="display:none;"></div>
         <div class="filter-bar">
-          <input type="text" id="error-search" class="filter-input" placeholder="Search error message, stack, or device...">
+          <input type="text" id="error-search" class="filter-input" placeholder="Search error message, stack, subsystem...">
           <select id="error-subsystem" class="filter-select">
             <option value="">All Subsystems</option>
             <option value="boot">boot</option>
@@ -708,7 +912,7 @@
                 <th style="width: 90px;">Level</th>
                 <th style="width: 110px;">Subsystem</th>
                 <th>Error Message</th>
-                <th style="width: 100px;">Action</th>
+                <th style="width: 90px;">Action</th>
               </tr>
             </thead>
             <tbody id="errors-tbody">
@@ -724,26 +928,28 @@
       <div class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
             Active Desktop Clients Running Now
           </div>
-          <button class="btn-action" id="btn-refresh-launchers">Refresh List</button>
+          <button class="btn-action" id="btn-refresh-launchers">↺ Refresh</button>
         </div>
+        <!-- Launcher stats summary row -->
+        <div class="launchers-summary" id="launchers-summary" style="display:none;"></div>
         <div style="overflow-x: auto;">
           <table class="data-table">
             <thead>
               <tr>
                 <th>Device ID</th>
                 <th>Platform</th>
-                <th>Architecture</th>
-                <th>Client Version</th>
-                <th>First Launched</th>
+                <th>Arch</th>
+                <th>Version</th>
+                <th>First Seen</th>
                 <th>Last Active</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody id="launchers-tbody">
-              <tr><td colspan="7" class="table-empty">No active launchers connected right now. Launch the launcher to see it here!</td></tr>
+              <tr><td colspan="7" class="table-empty">No active launchers connected right now. Launch the client to see it here!</td></tr>
             </tbody>
           </table>
         </div>
@@ -755,62 +961,61 @@
       <div class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-            Recent Client Mod & Asset Downloads
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Recent Client Mod &amp; Asset Downloads
           </div>
-          <button class="btn-action" id="btn-refresh-downloads">Refresh</button>
+          <button class="btn-action" id="btn-refresh-downloads">↺ Refresh</button>
         </div>
+        <!-- Download summary stats row -->
+        <div class="dl-summary" id="dl-summary" style="display:none;"></div>
         <div style="overflow-x: auto;">
           <table class="data-table">
             <thead>
               <tr>
                 <th style="width: 140px;">Timestamp</th>
                 <th>Asset / Download URL</th>
-                <th style="width: 100px;">Size</th>
-                <th style="width: 110px;">Duration</th>
-                <th style="width: 90px;">Status</th>
+                <th style="width: 90px;">Size</th>
+                <th style="width: 90px;">Speed</th>
+                <th style="width: 90px;">Duration</th>
+                <th style="width: 80px;">Status</th>
               </tr>
             </thead>
             <tbody id="downloads-tbody">
-              <tr><td colspan="5" class="table-empty">No recent downloads recorded yet.</td></tr>
+              <tr><td colspan="6" class="table-empty">No recent downloads recorded yet.</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
 
-    <!-- Tab 5: Quick Play Servers Management -->
+    <!-- Tab 5: Quick Play Servers -->
     <div class="tab-pane" id="tab-servers">
       <div class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
             Quick Play Featured Minecraft Servers
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-action primary" id="btn-add-server">
-              <span>+ Add Server</span>
-            </button>
-            <button class="btn-action" id="btn-reset-servers" title="Reset to standard defaults">
-              <span>Reset Defaults</span>
-            </button>
-            <button class="btn-action" id="btn-refresh-servers">Refresh</button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-action primary" id="btn-add-server">+ Add Server</button>
+            <button class="btn-action" id="btn-reset-servers">Reset Defaults</button>
+            <button class="btn-action" id="btn-refresh-servers">↺ Refresh</button>
           </div>
         </div>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          These servers appear directly on the Speedy Launcher Home screen under <strong>Quick Play</strong>. Changes saved here take effect immediately across all connected launchers worldwide.
+        <p style="font-size: 13px; color: var(--text-muted); padding: 10px 24px 0; border-top: 1px solid var(--card-border);">
+          These servers appear directly on the Speedy Launcher Home screen under <strong>Quick Play</strong>. Changes take effect immediately across all connected launchers.
         </p>
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto; padding-top: 2px;">
           <table class="data-table">
             <thead>
               <tr>
-                <th style="width: 60px;">Order</th>
-                <th style="width: 50px;">Icon</th>
+                <th style="width: 50px;">Order</th>
+                <th style="width: 42px;">Icon</th>
                 <th>Server Name &amp; ID</th>
                 <th>Address &amp; Port</th>
                 <th>Badge / Tag</th>
                 <th>Type</th>
-                <th style="width: 200px; text-align: right;">Actions</th>
+                <th style="width: 190px; text-align: right;">Actions</th>
               </tr>
             </thead>
             <tbody id="servers-tbody">
@@ -821,37 +1026,33 @@
       </div>
     </div>
 
-    <!-- Tab 6: News & Announcements Management -->
+    <!-- Tab 6: News & Announcements -->
     <div class="tab-pane" id="tab-news">
       <div class="dashboard-section">
         <div class="section-header">
           <div class="section-title">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
             News &amp; Launcher Announcements Hub
           </div>
-          <div style="display: flex; gap: 8px;">
-            <button class="btn-action primary" id="btn-add-news">
-              <span>+ Add Announcement</span>
-            </button>
-            <button class="btn-action" id="btn-reset-news" title="Reset to standard defaults">
-              <span>Reset Defaults</span>
-            </button>
-            <button class="btn-action" id="btn-refresh-news">Refresh</button>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn-action primary" id="btn-add-news">+ Add Announcement</button>
+            <button class="btn-action" id="btn-reset-news">Reset Defaults</button>
+            <button class="btn-action" id="btn-refresh-news">↺ Refresh</button>
           </div>
         </div>
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+        <p style="font-size: 13px; color: var(--text-muted); padding: 10px 24px 0; border-top: 1px solid var(--card-border);">
           Announcements published here appear live on the Speedy Launcher Home screen worldwide under <strong>News &amp; Updates</strong>.
         </p>
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto; padding-top: 2px;">
           <table class="data-table">
             <thead>
               <tr>
                 <th style="width: 70px;">Thumb</th>
-                <th>Title</th>
-                <th>Category Tag</th>
+                <th>Title &amp; Description</th>
+                <th>Tag</th>
                 <th>Date</th>
                 <th>Link</th>
-                <th style="width: 170px; text-align: right;">Actions</th>
+                <th style="width: 160px; text-align: right;">Actions</th>
               </tr>
             </thead>
             <tbody id="news-tbody">
@@ -864,56 +1065,56 @@
   </main>
 
   <!-- News Edit/Add Modal -->
-  <div id="news-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center;">
-    <div class="modal-box" style="width:520px; max-width:92vw;">
+  <div id="news-modal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 540px;">
       <div class="modal-header">
         <div style="font-weight:700; font-size:15px;" id="news-modal-title">Add Announcement</div>
-        <button class="btn-action" id="news-modal-close">&times;</button>
+        <button class="btn-action" id="news-modal-close">✕</button>
       </div>
-      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
-        <div id="news-form-error" style="display:none; padding:8px 12px; background:rgba(239,68,68,0.15); border:1px solid var(--danger); border-radius:6px; color:#fca5a5; font-size:12px;"></div>
+      <div class="modal-body">
+        <div id="news-form-error" class="form-error"></div>
         <input type="hidden" id="news-edit-id" value="">
         <div>
-          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Title</label>
-          <input type="text" id="news-input-title" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="e.g. Winter Client Update Released">
+          <label class="modal-field-label">Title *</label>
+          <input type="text" id="news-input-title" class="modal-input" placeholder="e.g. Winter Client Update Released">
         </div>
         <div style="display:flex; gap:12px;">
           <div style="flex:1;">
-            <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Tag Label</label>
-            <input type="text" id="news-input-tag" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="ANNOUNCEMENT, UPDATE, EVENT">
+            <label class="modal-field-label">Tag Label</label>
+            <input type="text" id="news-input-tag" class="modal-input" placeholder="ANNOUNCEMENT, UPDATE, EVENT">
           </div>
           <div style="flex:1;">
-            <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Date</label>
-            <input type="text" id="news-input-date" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="Nov 2026">
+            <label class="modal-field-label">Date</label>
+            <input type="text" id="news-input-date" class="modal-input" placeholder="Nov 2026">
           </div>
         </div>
         <div>
-          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Thumbnail URL</label>
-          <input type="text" id="news-input-thumb" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="https://launchercontent.mojang.com/... or image URL">
-          <div id="news-thumb-preview" style="width:100%; height:80px; margin-top:6px; border-radius:8px; background-size:cover; background-position:center; background-color:#161922; border:1px solid rgba(255,255,255,0.1);"></div>
+          <label class="modal-field-label">Thumbnail URL</label>
+          <input type="text" id="news-input-thumb" class="modal-input" placeholder="https://... or leave blank">
+          <div id="news-thumb-preview" style="width:100%; height:80px; margin-top:7px; border-radius:8px; background-size:cover; background-position:center; background-color:#161922; border:1px solid rgba(255,255,255,0.08);"></div>
         </div>
         <div>
-          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">External Link URL</label>
-          <input type="text" id="news-input-link" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="https://...">
+          <label class="modal-field-label">External Link URL</label>
+          <input type="text" id="news-input-link" class="modal-input" placeholder="https://...">
         </div>
         <div>
-          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Details / Description</label>
-          <textarea id="news-input-details" class="input-filter" style="width:100%; height:70px; box-sizing:border-box; margin-top:4px; resize:vertical;" placeholder="Optional announcement details..."></textarea>
+          <label class="modal-field-label">Details / Description</label>
+          <textarea id="news-input-details" class="modal-input" placeholder="Optional announcement details..."></textarea>
         </div>
-        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
-          <button class="btn-action" id="news-modal-cancel">Cancel</button>
-          <button class="btn-action primary" id="news-modal-save">Save Announcement</button>
-        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-action" id="news-modal-cancel">Cancel</button>
+        <button class="btn-action primary" id="news-modal-save">Save Announcement</button>
       </div>
     </div>
   </div>
 
   <!-- Stack Trace Modal -->
-  <div id="stack-modal">
+  <div id="stack-modal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
         <div style="font-weight: 700; font-size: 15px;" id="modal-title">Client Error Inspection</div>
-        <button class="btn-action" id="modal-close">&times;</button>
+        <button class="btn-action" id="modal-close">✕</button>
       </div>
       <div class="modal-body">
         <div>
@@ -933,36 +1134,36 @@
   </div>
 
   <!-- Server Modal -->
-  <div id="server-modal" style="position: fixed; inset: 0; background: rgba(7, 8, 12, 0.85); backdrop-filter: blur(10px); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px;">
+  <div id="server-modal" class="modal-overlay">
     <div class="modal-box" style="max-width: 580px;">
       <div class="modal-header">
         <div style="font-weight: 700; font-size: 15px;" id="server-modal-title">Edit Quick Play Server</div>
-        <button class="btn-action" id="server-modal-close" type="button">&times;</button>
+        <button class="btn-action" id="server-modal-close" type="button">✕</button>
       </div>
       <form id="server-form">
         <div class="modal-body" style="gap: 14px;">
           <input type="hidden" id="server-edit-id" />
           <div class="input-group">
-            <label for="server-name">Server Name *</label>
+            <label for="server-name" class="modal-field-label">Server Name *</label>
             <input type="text" id="server-name" class="input-field" placeholder="e.g. Hypixel Network" required />
           </div>
           <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
             <div class="input-group">
-              <label for="server-ip">Server Address (Host / IP) *</label>
+              <label for="server-ip" class="modal-field-label">Server Address *</label>
               <input type="text" id="server-ip" class="input-field" placeholder="e.g. mc.hypixel.net" required />
             </div>
             <div class="input-group">
-              <label for="server-port">Port</label>
+              <label for="server-port" class="modal-field-label">Port</label>
               <input type="number" id="server-port" class="input-field" placeholder="25565" value="25565" />
             </div>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="input-group">
-              <label for="server-tag">Badge Tag (e.g. POPULAR, HARDCORE SMP)</label>
+              <label for="server-tag" class="modal-field-label">Badge Tag</label>
               <input type="text" id="server-tag" class="input-field" placeholder="POPULAR" />
             </div>
             <div class="input-group">
-              <label for="server-tagclass">Tag Style</label>
+              <label for="server-tagclass" class="modal-field-label">Tag Style</label>
               <select id="server-tagclass" class="input-field" style="background: #151926;">
                 <option value="ok">Green (ok)</option>
                 <option value="ember">Orange (ember)</option>
@@ -971,16 +1172,16 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="server-motd">Fallback MOTD Description</label>
+            <label for="server-motd" class="modal-field-label">Fallback MOTD Description</label>
             <input type="text" id="server-motd" class="input-field" placeholder="Hypixel Network [1.8/1.21] · Bedwars, Skyblock" />
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="input-group">
-              <label for="server-players">Fallback Player Display</label>
+              <label for="server-players" class="modal-field-label">Fallback Player Display</label>
               <input type="text" id="server-players" class="input-field" placeholder="10K+ Online" />
             </div>
             <div class="input-group">
-              <label for="server-official">Official Server</label>
+              <label for="server-official" class="modal-field-label">Official Server</label>
               <select id="server-official" class="input-field" style="background: #151926;">
                 <option value="false">Community / Partner</option>
                 <option value="true">Official Speedy Server</option>
@@ -988,10 +1189,10 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="server-icon">Custom Icon URL (optional, defaults to built-in logo)</label>
+            <label for="server-icon" class="modal-field-label">Custom Icon URL (optional)</label>
             <input type="text" id="server-icon" class="input-field" placeholder="https://... or leave blank" />
           </div>
-          <div id="server-form-error" style="color: var(--danger); font-size: 13px; display: none;"></div>
+          <div id="server-form-error" class="form-error"></div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn-action" id="server-modal-cancel">Cancel</button>
@@ -1002,97 +1203,145 @@
   </div>
 
   <script>
-    const authOverlay = document.getElementById('auth-overlay');
-    const loginForm = document.getElementById('login-form');
-    const authError = document.getElementById('auth-error');
-    const btnLogout = document.getElementById('btn-logout');
-    const btnRefresh = document.getElementById('btn-refresh');
-    const liveStatus = document.getElementById('live-status');
-    const liveDot = document.getElementById('live-dot');
-    const terminalFeed = document.getElementById('terminal-feed');
+    /* ───────────── DOM refs ───────────── */
+    const authOverlay    = document.getElementById('auth-overlay');
+    const loginForm      = document.getElementById('login-form');
+    const authError      = document.getElementById('auth-error');
+    const btnLogout      = document.getElementById('btn-logout');
+    const btnRefresh     = document.getElementById('btn-refresh');
+    const liveStatus     = document.getElementById('live-status');
+    const liveDot        = document.getElementById('live-dot');
+    const terminalFeed   = document.getElementById('terminal-feed');
+    const healthBanner   = document.getElementById('health-banner');
+    const healthIcon     = document.getElementById('health-icon');
+    const healthText     = document.getElementById('health-text');
+    const healthRefresh  = document.getElementById('health-refresh');
+    const lastRefreshLbl = document.getElementById('last-refresh-label');
+    const chkAutoscroll  = document.getElementById('chk-autoscroll');
 
-    // Stat card values
-    const valLaunchers = document.getElementById('val-launchers');
-    const valUsers = document.getElementById('val-users');
-    const valOnline = document.getElementById('val-online');
-    const valDevices = document.getElementById('val-devices');
-    const valDownloads = document.getElementById('val-downloads');
-    const valErrors = document.getElementById('val-errors');
-    const badgeErrors = document.getElementById('badge-errors');
+    // Stat values
+    const valLaunchers   = document.getElementById('val-launchers');
+    const valUsers       = document.getElementById('val-users');
+    const valOnline      = document.getElementById('val-online');
+    const valDevices     = document.getElementById('val-devices');
+    const valDownloads   = document.getElementById('val-downloads');
+    const valErrors      = document.getElementById('val-errors');
+    const badgeErrors    = document.getElementById('badge-errors');
     const badgeLaunchers = document.getElementById('badge-launchers');
+    const platformPills  = document.getElementById('platform-pills');
+    const dlRateWrap     = document.getElementById('dl-rate-wrap');
+    const dlRateFill     = document.getElementById('dl-rate-fill');
+    const dlRateLabel    = document.getElementById('dl-rate-label');
 
-    // Error Center elements
-    const errorsTbody = document.getElementById('errors-tbody');
-    const errorSearch = document.getElementById('error-search');
+    // Error Center
+    const errorsTbody    = document.getElementById('errors-tbody');
+    const errorSearch    = document.getElementById('error-search');
     const errorSubsystem = document.getElementById('error-subsystem');
-    const btnReloadErrors = document.getElementById('btn-reload-errors');
-    const btnExportJson = document.getElementById('btn-export-json');
-    const btnExportCsv = document.getElementById('btn-export-csv');
-    const btnClearErrors = document.getElementById('btn-clear-errors');
-    const btnQuickExport = document.getElementById('btn-quick-export');
+    const btnReloadErrors  = document.getElementById('btn-reload-errors');
+    const btnExportJson    = document.getElementById('btn-export-json');
+    const btnExportCsv     = document.getElementById('btn-export-csv');
+    const btnClearErrors   = document.getElementById('btn-clear-errors');
+    const btnQuickExport   = document.getElementById('btn-quick-export');
+    const errorSubsysRow   = document.getElementById('error-subsys-row');
 
     // Launchers & Downloads tables
-    const launchersTbody = document.getElementById('launchers-tbody');
-    const downloadsTbody = document.getElementById('downloads-tbody');
+    const launchersTbody     = document.getElementById('launchers-tbody');
+    const downloadsTbody     = document.getElementById('downloads-tbody');
+    const launchersSummary   = document.getElementById('launchers-summary');
+    const dlSummary          = document.getElementById('dl-summary');
     const btnRefreshLaunchers = document.getElementById('btn-refresh-launchers');
     const btnRefreshDownloads = document.getElementById('btn-refresh-downloads');
 
-    // Quick Play Servers elements
-    const serversTbody = document.getElementById('servers-tbody');
-    const badgeServers = document.getElementById('badge-servers');
-    const btnAddServer = document.getElementById('btn-add-server');
+    // Quick Play Servers
+    const serversTbody    = document.getElementById('servers-tbody');
+    const badgeServers    = document.getElementById('badge-servers');
+    const btnAddServer    = document.getElementById('btn-add-server');
     const btnResetServers = document.getElementById('btn-reset-servers');
     const btnRefreshServers = document.getElementById('btn-refresh-servers');
-    const serverModal = document.getElementById('server-modal');
-    const serverForm = document.getElementById('server-form');
+    const serverModal     = document.getElementById('server-modal');
+    const serverForm      = document.getElementById('server-form');
     const serverModalTitle = document.getElementById('server-modal-title');
     const serverModalClose = document.getElementById('server-modal-close');
     const serverModalCancel = document.getElementById('server-modal-cancel');
-    const serverFormError = document.getElementById('server-form-error');
-
+    const serverFormError  = document.getElementById('server-form-error');
     let cachedServers = [];
 
-    // News & Announcements elements
-    const newsTbody = document.getElementById('news-tbody');
-    const badgeNews = document.getElementById('badge-news');
-    const btnAddNews = document.getElementById('btn-add-news');
-    const btnResetNews = document.getElementById('btn-reset-news');
+    // News & Announcements
+    const newsTbody      = document.getElementById('news-tbody');
+    const badgeNews      = document.getElementById('badge-news');
+    const btnAddNews     = document.getElementById('btn-add-news');
+    const btnResetNews   = document.getElementById('btn-reset-news');
     const btnRefreshNews = document.getElementById('btn-refresh-news');
-    const newsModal = document.getElementById('news-modal');
+    const newsModal      = document.getElementById('news-modal');
     const newsModalTitle = document.getElementById('news-modal-title');
     const newsModalClose = document.getElementById('news-modal-close');
-    const newsModalCancel = document.getElementById('news-modal-cancel');
-    const newsModalSave = document.getElementById('news-modal-save');
-    const newsFormError = document.getElementById('news-form-error');
-    const newsEditId = document.getElementById('news-edit-id');
+    const newsModalCancel= document.getElementById('news-modal-cancel');
+    const newsModalSave  = document.getElementById('news-modal-save');
+    const newsFormError  = document.getElementById('news-form-error');
+    const newsEditId     = document.getElementById('news-edit-id');
     const newsInputTitle = document.getElementById('news-input-title');
-    const newsInputTag = document.getElementById('news-input-tag');
-    const newsInputDate = document.getElementById('news-input-date');
+    const newsInputTag   = document.getElementById('news-input-tag');
+    const newsInputDate  = document.getElementById('news-input-date');
     const newsInputThumb = document.getElementById('news-input-thumb');
     const newsThumbPreview = document.getElementById('news-thumb-preview');
-    const newsInputLink = document.getElementById('news-input-link');
+    const newsInputLink  = document.getElementById('news-input-link');
     const newsInputDetails = document.getElementById('news-input-details');
-
     let cachedNews = [];
 
-    // Modal elements
-    const stackModal = document.getElementById('stack-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalMsg = document.getElementById('modal-msg');
-    const modalStack = document.getElementById('modal-stack');
-    const modalClose = document.getElementById('modal-close');
-    const modalDismiss = document.getElementById('modal-dismiss');
-    const modalCopy = document.getElementById('modal-copy');
+    // Stack modal
+    const stackModal  = document.getElementById('stack-modal');
+    const modalTitle  = document.getElementById('modal-title');
+    const modalMsg    = document.getElementById('modal-msg');
+    const modalStack  = document.getElementById('modal-stack');
+    const modalClose  = document.getElementById('modal-close');
+    const modalDismiss= document.getElementById('modal-dismiss');
+    const modalCopy   = document.getElementById('modal-copy');
 
     let token = localStorage.getItem('speedy_admin_token');
     let evtSource = null;
     let cachedErrors = [];
+    let lastRefreshAt = null;
 
-    // Stream logs persistence keys
     const LOGS_STORAGE_KEY = 'speedy_admin_stream_logs';
     const seenLogKeys = new Set();
 
+    /* ───────────── Helpers ───────────── */
+    function escapeHtml(s) {
+      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    }
+    function formatSpeed(bytes, ms) {
+      if (!bytes || !ms || ms === 0) return '—';
+      const bps = (bytes / (ms / 1000));
+      return formatBytes(bps) + '/s';
+    }
+    function relativeTime(ts) {
+      const diff = Math.floor((Date.now() - ts) / 1000);
+      if (diff < 60) return `${diff}s ago`;
+      if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+      return `${Math.floor(diff/3600)}h ago`;
+    }
+    function bumpStat(el) {
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 500);
+    }
+    function setStatVal(el, newVal) {
+      const cur = parseInt(el.innerText) || 0;
+      const nv  = parseInt(newVal) || 0;
+      if (cur !== nv) {
+        el.innerText = nv;
+        bumpStat(el);
+      }
+    }
+
+    /* ───────────── Log persistence ───────────── */
     function loadSavedLogs() {
+      if (!terminalFeed) return;
       try {
         const raw = localStorage.getItem(LOGS_STORAGE_KEY);
         if (raw) {
@@ -1108,6 +1357,7 @@
     }
 
     function saveLogsToStorage() {
+      if (!terminalFeed) return;
       try {
         const logs = [];
         const rows = terminalFeed.querySelectorAll('.log-row');
@@ -1124,17 +1374,45 @@
       } catch {}
     }
 
+    /* ───────────── Health Banner ───────────── */
+    function updateHealthBanner(onlineLaunchers, totalErrors) {
+      healthBanner.style.display = 'flex';
+      if (totalErrors > 50) {
+        healthBanner.className = 'critical';
+        healthIcon.innerText = '🔴';
+        healthText.innerText = `System alert — ${totalErrors} errors logged, ${onlineLaunchers} launcher${onlineLaunchers !== 1 ? 's' : ''} online`;
+      } else if (totalErrors > 10 || onlineLaunchers === 0) {
+        healthBanner.className = 'warning';
+        healthIcon.innerText = '🟡';
+        healthText.innerText = `${onlineLaunchers} launcher${onlineLaunchers !== 1 ? 's' : ''} online · ${totalErrors} errors logged`;
+      } else {
+        healthBanner.className = 'healthy';
+        healthIcon.innerText = '🟢';
+        healthText.innerText = `System nominal — ${onlineLaunchers} launcher${onlineLaunchers !== 1 ? 's' : ''} online · ${totalErrors} errors`;
+      }
+      if (lastRefreshAt) {
+        healthRefresh.innerText = `Refreshed ${relativeTime(lastRefreshAt)}`;
+      }
+    }
+
+    /* ───────────── Refresh label ticker ───────────── */
+    setInterval(() => {
+      if (!lastRefreshAt) return;
+      lastRefreshLbl.innerText = `· refreshed ${relativeTime(lastRefreshAt)}`;
+      if (lastRefreshAt) healthRefresh.innerText = `Refreshed ${relativeTime(lastRefreshAt)}`;
+    }, 10000);
+
+    /* ───────────── Init check ───────────── */
     if (token) {
       initDashboard();
     }
 
-    // Login Form
+    /* ───────────── Login ───────────── */
     loginForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       authError.style.display = 'none';
-      const email = document.getElementById('admin-email').value;
+      const email    = document.getElementById('admin-email').value;
       const password = document.getElementById('admin-pass').value;
-
       try {
         const res = await fetch('/api/admin/login', {
           method: 'POST',
@@ -1169,7 +1447,7 @@
       loadNews();
     });
 
-    // Tab Switching
+    /* ───────────── Tab Switching ───────────── */
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -1177,10 +1455,11 @@
         btn.classList.add('active');
         const targetId = btn.dataset.tab;
         document.getElementById(targetId)?.classList.add('active');
-        if (targetId === 'tab-errors') loadErrors();
+        if (targetId === 'tab-errors')    loadErrors();
+        if (targetId === 'tab-launchers') fetchMetrics();   // ← FIXED: refresh on tab click
         if (targetId === 'tab-downloads') loadDownloads();
-        if (targetId === 'tab-servers') loadServers();
-        if (targetId === 'tab-news') loadNews();
+        if (targetId === 'tab-servers')   loadServers();
+        if (targetId === 'tab-news')      loadNews();
       });
     });
 
@@ -1189,12 +1468,12 @@
     });
 
     document.getElementById('btn-clear-stream').addEventListener('click', () => {
-      terminalFeed.innerHTML = '<div class="log-row" data-boot="true"><span class="log-time">[CLEARED]</span><span class="log-level info">SYSTEM</span><span class="log-msg">Stream cleared by admin.</span></div>';
+      terminalFeed.innerHTML = '<div class="log-row" data-boot="true"><span class="log-time">[CLEARED]</span><span class="log-icon">🗑</span><span class="log-level info">SYSTEM</span><span class="log-msg">Stream cleared by admin.</span></div>';
       localStorage.removeItem(LOGS_STORAGE_KEY);
       seenLogKeys.clear();
     });
 
-    // Dashboard Initialization
+    /* ───────────── Dashboard Init ───────────── */
     async function initDashboard() {
       authOverlay.style.display = 'none';
       loadSavedLogs();
@@ -1203,10 +1482,10 @@
       loadErrors();
       loadServers();
       loadNews();
-      setInterval(fetchMetrics, 12000); // 12s metrics refresh
+      setInterval(fetchMetrics, 15000); // 15s metrics refresh
     }
 
-    // Metrics API
+    /* ───────────── Metrics API ───────────── */
     async function fetchMetrics() {
       try {
         const res = await fetch('/api/admin/metrics', {
@@ -1218,62 +1497,55 @@
           return;
         }
         const data = await res.json();
-        valLaunchers.innerText = data.onlineLaunchers || 0;
-        valUsers.innerText = data.totalUsers || 0;
-        valOnline.innerText = data.onlineUsers || 0;
-        valDevices.innerText = data.totalDevices || 0;
-        valDownloads.innerText = data.totalDownloads || 0;
-        valErrors.innerText = data.totalErrors || 0;
-        badgeErrors.innerText = data.totalErrors || 0;
+        setStatVal(valLaunchers, data.onlineLaunchers || 0);
+        setStatVal(valUsers,     data.totalUsers || 0);
+        setStatVal(valOnline,    data.onlineUsers || 0);
+        setStatVal(valDevices,   data.totalDevices || 0);
+        setStatVal(valDownloads, data.totalDownloads || 0);
+        setStatVal(valErrors,    data.totalErrors || 0);
+        badgeErrors.innerText    = data.totalErrors || 0;
         badgeLaunchers.innerText = data.onlineLaunchers || 0;
 
-        renderLaunchers(data.activeLaunchersList || []);
+        lastRefreshAt = Date.now();
+        lastRefreshLbl.innerText = '· just refreshed';
 
-        // Restore server-persisted activity logs across reloads
+        renderLaunchers(data.activeLaunchersList || []);
+        updateHealthBanner(data.onlineLaunchers || 0, data.totalErrors || 0);
+
+        // Replay server-persisted activity logs
         if (Array.isArray(data.recentLogs) && data.recentLogs.length > 0) {
           for (const item of data.recentLogs) {
             const { type, payload, ts } = item;
-            let level = 'info';
-            let subsys = 'BATCH';
-            let msg = '';
+            let level = 'info', subsys = 'BATCH', msg = '', icon = '📋';
             if (type === 'startup') {
-              level = 'startup';
-              subsys = 'LAUNCHER';
-              msg = `🟢 Launcher started on ${payload?.platform || 'windows'} (${payload?.deviceId || 'spd-client'}) v${payload?.version || '1.0.0'}`;
+              level = 'startup'; subsys = 'LAUNCHER'; icon = '🟢';
+              msg = `Launcher started on ${payload?.platform || 'windows'} (${payload?.deviceId || 'spd-client'}) v${payload?.version || '1.0.0'}`;
             } else if (type === 'shutdown') {
-              level = 'shutdown';
-              subsys = 'LAUNCHER';
-              msg = `🔴 Launcher closed (${payload?.deviceId || 'spd-client'}) — Uptime: ${payload?.uptimeSeconds || 0}s`;
+              level = 'shutdown'; subsys = 'LAUNCHER'; icon = '🔴';
+              msg = `Launcher closed (${payload?.deviceId || 'spd-client'}) — Uptime: ${payload?.uptimeSeconds || 0}s`;
             } else if (type === 'game_launch') {
-              level = 'info';
-              subsys = 'GAME';
-              msg = `🎮 Minecraft ${payload?.mcVersion || ''} launched on [${payload?.instanceId || 'default'}]`;
+              level = 'info'; subsys = 'GAME'; icon = '🎮';
+              msg = `Minecraft ${payload?.mcVersion || ''} launched on [${payload?.instanceId || 'default'}]`;
             } else if (type === 'game_exit') {
-              level = 'info';
-              subsys = 'GAME';
-              msg = `🎮 Minecraft exited normally (code ${payload?.code ?? 0}) on [${payload?.instanceId || 'default'}]`;
+              level = 'info'; subsys = 'GAME'; icon = '🎮';
+              msg = `Minecraft exited (code ${payload?.code ?? 0}) on [${payload?.instanceId || 'default'}]`;
             } else if (type === 'presence') {
-              level = 'social';
-              subsys = 'PRESENCE';
+              level = 'social'; subsys = 'PRESENCE'; icon = '👤';
               msg = `User ${payload?.userId || payload?.username} is ${payload?.status}`;
             } else if (type === 'app_error' || type === 'error') {
-              level = payload?.level || 'error';
-              subsys = payload?.subsystem || 'CLIENT';
+              level = payload?.level || 'error'; subsys = payload?.subsystem || 'CLIENT'; icon = '❌';
               msg = `${payload?.message || ''} ${payload?.stack ? '(' + payload.stack.slice(0, 100) + '...)' : ''}`;
             } else if (type === 'download') {
-              level = 'download';
-              subsys = 'DOWNLOAD';
+              level = 'download'; subsys = 'DOWNLOAD'; icon = '📥';
               msg = `Downloaded asset: ${payload?.url} (${formatBytes(payload?.size)}) - ${payload?.status}`;
             } else if (type === 'events') {
-              level = 'info';
-              subsys = 'BATCH';
+              level = 'info'; subsys = 'BATCH'; icon = '📦';
               msg = `Processed batch of ${payload?.count} telemetry event(s)`;
             } else {
-              level = 'info';
-              subsys = (type || 'event').toUpperCase();
+              level = 'info'; subsys = (type || 'event').toUpperCase(); icon = '📋';
               msg = JSON.stringify(payload);
             }
-            appendLog(ts || Date.now(), level, subsys, msg, false);
+            appendLog(ts || Date.now(), level, subsys, msg, false, icon);
           }
           saveLogsToStorage();
         }
@@ -1282,32 +1554,85 @@
       }
     }
 
+    /* ───────────── Render Launchers ───────────── */
     function renderLaunchers(list) {
+      // Update platform pills on stat card
+      if (list && list.length > 0) {
+        const platCounts = {};
+        for (const l of list) {
+          const p = (l.platform || 'windows').toLowerCase();
+          platCounts[p] = (platCounts[p] || 0) + 1;
+        }
+        const total = list.length;
+        platformPills.innerHTML = Object.entries(platCounts).map(([p, c]) => {
+          const cls = p === 'darwin' ? 'mac' : (p === 'linux' ? 'linux' : 'win');
+          const pct = Math.round((c / total) * 100);
+          return `<span class="platform-pill ${cls}">${p.slice(0,3).toUpperCase()} ${pct}%</span>`;
+        }).join('');
+      } else {
+        platformPills.innerHTML = '';
+      }
+
+      // Launcher summary row in tab
+      if (list && list.length > 0) {
+        const platCounts = {};
+        const verCounts  = {};
+        for (const l of list) {
+          const p = (l.platform || 'windows').toLowerCase();
+          const v = l.version || '?';
+          platCounts[p] = (platCounts[p] || 0) + 1;
+          verCounts[v]  = (verCounts[v] || 0) + 1;
+        }
+        const topVer = Object.entries(verCounts).sort((a,b) => b[1]-a[1])[0];
+        launchersSummary.style.display = 'grid';
+        launchersSummary.innerHTML = `
+          <div class="summary-item">
+            <div class="si-label">Total Online</div>
+            <div class="si-val" style="color: var(--success);">${list.length}</div>
+            <div class="si-sub">Live right now</div>
+          </div>
+          ${Object.entries(platCounts).map(([p,c]) => `
+          <div class="summary-item">
+            <div class="si-label">${p.charAt(0).toUpperCase() + p.slice(1)}</div>
+            <div class="si-val">${c}</div>
+            <div class="si-sub">${Math.round((c/list.length)*100)}% of launchers</div>
+          </div>`).join('')}
+          ${topVer ? `
+          <div class="summary-item">
+            <div class="si-label">Top Version</div>
+            <div class="si-val" style="color: #818cf8;">v${topVer[0]}</div>
+            <div class="si-sub">${topVer[1]} launcher${topVer[1] !== 1 ? 's' : ''}</div>
+          </div>` : ''}
+        `;
+      } else {
+        launchersSummary.style.display = 'none';
+      }
+
+      // Table
       if (!list || list.length === 0) {
-        launchersTbody.innerHTML = '<tr><td colspan="7" class="table-empty">No active launchers connected right now. Launch the launcher to see it here!</td></tr>';
+        launchersTbody.innerHTML = '<tr><td colspan="7" class="table-empty">No active launchers connected right now.</td></tr>';
         return;
       }
       launchersTbody.innerHTML = list.map(l => `
         <tr>
-          <td><code style="color: #a5b4fc;">${escapeHtml(l.deviceId)}</code></td>
-          <td><span class="badge badge-${l.platform || 'windows'}">${(l.platform || 'windows').toUpperCase()}</span></td>
-          <td>${escapeHtml(l.arch || 'x64')}</td>
-          <td>v${escapeHtml(l.version || '1.0.0')}</td>
-          <td>${new Date(l.firstSeen || Date.now()).toLocaleTimeString()}</td>
-          <td>${new Date(l.lastSeen || Date.now()).toLocaleTimeString()}</td>
+          <td><code style="color: #a5b4fc; font-size: 11.5px;">${escapeHtml(l.deviceId)}</code></td>
+          <td><span class="badge badge-${(l.platform || 'windows').toLowerCase()}">${(l.platform || 'windows').toUpperCase()}</span></td>
+          <td style="color: var(--text-muted); font-size: 12px;">${escapeHtml(l.arch || 'x64')}</td>
+          <td><code style="font-size: 12px;">v${escapeHtml(l.version || '1.0.0')}</code></td>
+          <td style="font-size: 12px; color: var(--text-muted);">${new Date(l.firstSeen || Date.now()).toLocaleString()}</td>
+          <td style="font-size: 12px; color: var(--text-muted);">${new Date(l.lastSeen || Date.now()).toLocaleString()}</td>
           <td><span class="badge badge-online">ONLINE</span></td>
         </tr>
       `).join('');
     }
 
-    // Error Center
+    /* ───────────── Error Center ───────────── */
     async function loadErrors() {
-      const search = errorSearch.value.trim();
-      const subsystem = errorSubsystem.value;
+      const search    = errorSearch ? errorSearch.value.trim() : '';
+      const subsystem = errorSubsystem ? errorSubsystem.value : '';
       const q = new URLSearchParams();
-      if (search) q.set('search', search);
+      if (search)    q.set('search', search);
       if (subsystem) q.set('subsystem', subsystem);
-
       try {
         const res = await fetch(`/api/admin/errors?${q.toString()}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -1315,21 +1640,46 @@
         const data = await res.json();
         cachedErrors = data.errors || [];
         renderErrorsTable(cachedErrors);
+        renderErrorSubsystemSummary(cachedErrors);
       } catch {
         errorsTbody.innerHTML = '<tr><td colspan="5" class="table-empty" style="color: var(--danger);">Failed to load errors from Turso DB.</td></tr>';
       }
     }
 
+    function renderErrorSubsystemSummary(errors) {
+      if (!errors || errors.length === 0) {
+        errorSubsysRow.style.display = 'none';
+        return;
+      }
+      const counts = {};
+      for (const e of errors) {
+        const s = e.subsystem || 'unknown';
+        counts[s] = (counts[s] || 0) + 1;
+      }
+      const sorted = Object.entries(counts).sort((a,b) => b[1]-a[1]).slice(0,6);
+      const colors = ['#f87171','#fbbf24','#60a5fa','#34d399','#c084fc','#a5b4fc'];
+      errorSubsysRow.style.display = 'flex';
+      errorSubsysRow.innerHTML = `
+        <div class="stats-pill"><span class="sp-label">Total</span><span class="sp-val">${errors.length}</span></div>
+        ${sorted.map(([s,c], i) => `
+        <div class="stats-pill">
+          <span class="sp-dot" style="background:${colors[i % colors.length]};"></span>
+          <span class="sp-label">${escapeHtml(s)}</span>
+          <span class="sp-val">${c}</span>
+        </div>`).join('')}
+      `;
+    }
+
     function renderErrorsTable(errors) {
       if (!errors || errors.length === 0) {
-        errorsTbody.innerHTML = '<tr><td colspan="5" class="table-empty" style="color: var(--success);">Zero errors found! Everything is healthy.</td></tr>';
+        errorsTbody.innerHTML = '<tr><td colspan="5" class="table-empty" style="color: var(--success);">Zero errors found — everything is healthy! 🎉</td></tr>';
         return;
       }
       errorsTbody.innerHTML = errors.map((err, idx) => `
         <tr>
-          <td style="color: var(--text-muted); font-size: 11px;">${new Date(err.ts).toLocaleString()}</td>
+          <td style="color: var(--text-muted); font-size: 11px; white-space: nowrap;">${new Date(err.ts).toLocaleString()}</td>
           <td><span class="badge badge-offline">${(err.level || 'ERROR').toUpperCase()}</span></td>
-          <td><code style="color: #fbbf24;">[${escapeHtml(err.subsystem || 'general')}]</code></td>
+          <td><code style="color: #fbbf24; font-size: 11.5px;">[${escapeHtml(err.subsystem || 'general')}]</code></td>
           <td style="max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(err.message)}</td>
           <td>
             <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="viewErrorDetails(${idx})">Inspect</button>
@@ -1342,41 +1692,35 @@
       const err = cachedErrors[index];
       if (!err) return;
       modalTitle.innerText = `Error in [${err.subsystem || 'unknown'}] — ${new Date(err.ts).toLocaleString()}`;
-      modalMsg.innerText = err.message;
+      modalMsg.innerText   = err.message;
       modalStack.innerText = err.stack || 'No detailed stack trace recorded for this error.';
-      stackModal.style.display = 'flex';
+      stackModal.classList.add('open');
     };
 
     btnReloadErrors.addEventListener('click', loadErrors);
 
-    // Error Exports
     btnExportJson.addEventListener('click', () => {
       window.open(`/api/admin/errors/export?format=json&token=${encodeURIComponent(token)}`, '_blank');
     });
-
     btnQuickExport.addEventListener('click', () => {
       window.open(`/api/admin/errors/export?format=json&token=${encodeURIComponent(token)}`, '_blank');
     });
-
     btnExportCsv.addEventListener('click', () => {
       window.open(`/api/admin/errors/export?format=csv&token=${encodeURIComponent(token)}`, '_blank');
     });
 
     btnClearErrors.addEventListener('click', async () => {
-      if (!confirm('Are you sure you want to clear ALL logged client errors from Turso DB?')) return;
+      if (!confirm('Clear ALL logged client errors from Turso DB?')) return;
       try {
         const res = await fetch('/api/admin/errors/clear', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.ok) {
-          loadErrors();
-          fetchMetrics();
-        }
+        if (res.ok) { loadErrors(); fetchMetrics(); }
       } catch {}
     });
 
-    // Downloads Log
+    /* ───────────── Downloads Log ───────────── */
     async function loadDownloads() {
       try {
         const res = await fetch('/api/admin/downloads', {
@@ -1385,46 +1729,73 @@
         const data = await res.json();
         const list = data.downloads || [];
         if (list.length === 0) {
-          downloadsTbody.innerHTML = '<tr><td colspan="5" class="table-empty">No downloads recorded yet.</td></tr>';
+          downloadsTbody.innerHTML = '<tr><td colspan="6" class="table-empty">No downloads recorded yet.</td></tr>';
+          dlSummary.style.display = 'none';
+          dlRateWrap.style.display = 'none';
           return;
         }
+        // Compute stats
+        const total   = list.length;
+        const okCount = list.filter(dl => dl.status === 'ok').length;
+        const rate    = total > 0 ? Math.round((okCount / total) * 100) : 0;
+        const totalBytes = list.reduce((s, dl) => s + (dl.size || 0), 0);
+        const avgSpeed  = list.length > 0
+          ? list.reduce((s, dl) => s + (dl.size || 0) / Math.max(dl.durationMs || 1, 1), 0) / list.length * 1000
+          : 0;
+
+        // Update download rate on stat card
+        dlRateWrap.style.display = 'flex';
+        dlRateFill.style.width   = rate + '%';
+        dlRateFill.style.background = rate > 85 ? 'var(--success)' : rate > 60 ? 'var(--warning)' : 'var(--danger)';
+        dlRateLabel.innerText    = `${rate}% ok`;
+        dlRateLabel.style.color  = rate > 85 ? 'var(--success)' : rate > 60 ? 'var(--warning)' : 'var(--danger)';
+
+        // Summary row
+        dlSummary.style.display = 'flex';
+        dlSummary.innerHTML = `
+          <div class="stats-pill"><span class="sp-label">Total</span><span class="sp-val">${total}</span></div>
+          <div class="stats-pill"><span class="sp-dot" style="background:var(--success);"></span><span class="sp-label">Success</span><span class="sp-val">${okCount}</span></div>
+          <div class="stats-pill"><span class="sp-dot" style="background:var(--danger);"></span><span class="sp-label">Failed</span><span class="sp-val">${total - okCount}</span></div>
+          <div class="stats-pill"><span class="sp-label">Success Rate</span><span class="sp-val" style="color:${rate > 85 ? 'var(--success)' : 'var(--warning)'}">${rate}%</span></div>
+          <div class="stats-pill"><span class="sp-label">Total Data</span><span class="sp-val">${formatBytes(totalBytes)}</span></div>
+          <div class="stats-pill"><span class="sp-label">Avg Speed</span><span class="sp-val">${formatBytes(avgSpeed)}/s</span></div>
+        `;
+
         downloadsTbody.innerHTML = list.map(dl => `
           <tr>
-            <td style="color: var(--text-muted); font-size: 11px;">${new Date(dl.ts).toLocaleTimeString()}</td>
-            <td><code style="color: #93c5fd;">${escapeHtml(dl.url)}</code></td>
-            <td>${formatBytes(dl.size)}</td>
-            <td>${dl.durationMs || 0} ms</td>
-            <td><span class="badge ${dl.status === 'ok' ? 'badge-online' : 'badge-offline'}">${dl.status.toUpperCase()}</span></td>
+            <td style="color: var(--text-muted); font-size: 11px; white-space: nowrap;">${new Date(dl.ts).toLocaleString()}</td>
+            <td><code style="color: #93c5fd; font-size: 11.5px; word-break: break-all;">${escapeHtml(dl.url)}</code></td>
+            <td style="font-size: 12px; white-space: nowrap;">${formatBytes(dl.size)}</td>
+            <td style="font-size: 12px; white-space: nowrap;">${formatSpeed(dl.size, dl.durationMs)}</td>
+            <td style="font-size: 12px; white-space: nowrap; color: var(--text-muted);">${dl.durationMs || 0} ms</td>
+            <td><span class="badge ${dl.status === 'ok' ? 'badge-online' : 'badge-offline'}">${(dl.status || 'unknown').toUpperCase()}</span></td>
           </tr>
         `).join('');
       } catch {
-        downloadsTbody.innerHTML = '<tr><td colspan="5" class="table-empty">Failed to load downloads.</td></tr>';
+        downloadsTbody.innerHTML = '<tr><td colspan="6" class="table-empty">Failed to load downloads.</td></tr>';
       }
     }
 
     btnRefreshDownloads.addEventListener('click', loadDownloads);
     btnRefreshLaunchers.addEventListener('click', fetchMetrics);
 
-    // Modal Close
-    modalClose.addEventListener('click', () => stackModal.style.display = 'none');
-    modalDismiss.addEventListener('click', () => stackModal.style.display = 'none');
+    /* ───────────── Modal Close ───────────── */
+    modalClose.addEventListener('click',   () => stackModal.classList.remove('open'));
+    modalDismiss.addEventListener('click', () => stackModal.classList.remove('open'));
+    stackModal.addEventListener('click', (e) => { if (e.target === stackModal) stackModal.classList.remove('open'); });
     modalCopy.addEventListener('click', () => {
       navigator.clipboard.writeText(modalMsg.innerText + '\n\n' + modalStack.innerText);
       modalCopy.innerText = 'Copied!';
       setTimeout(() => modalCopy.innerText = 'Copy Stack', 2000);
     });
 
-    // Quick Play Servers Management
+    /* ───────────── Quick Play Servers ───────────── */
     async function loadServers() {
       try {
         const res = await fetch('/api/admin/servers', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.status === 401) {
-          localStorage.removeItem('speedy_admin_token');
-          location.reload();
-          return;
-        }
+        if (res.status === 401) { localStorage.removeItem('speedy_admin_token'); location.reload(); return; }
         const data = await res.json();
         cachedServers = Array.isArray(data?.servers) ? data.servers : [];
         badgeServers.innerText = cachedServers.length;
@@ -1440,38 +1811,39 @@
         return;
       }
       serversTbody.innerHTML = servers.map((s, idx) => {
-        const portStr = s.port && s.port !== 25565 ? `:${s.port}` : '';
+        const portStr  = s.port && s.port !== 25565 ? `:${s.port}` : '';
         const fullAddr = `${escapeHtml(s.ip)}${portStr}`;
-        const tagBadge = s.tag ? `<span class="badge ${s.tagClass || ''}" style="font-size: 10px;">${escapeHtml(s.tag)}</span>` : '<span style="color: var(--text-muted); font-size: 11px;">—</span>';
+        const tagBadge = s.tag
+          ? `<span class="badge ${s.tagClass || ''}" style="font-size: 10px;">${escapeHtml(s.tag)}</span>`
+          : `<span style="color: var(--text-muted); font-size: 11px;">—</span>`;
         const typeBadge = s.isOfficial
-          ? '<span class="badge badge-online" style="font-size: 10px;">OFFICIAL</span>'
-          : '<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 10px;">COMMUNITY</span>';
+          ? `<span class="badge badge-online" style="font-size: 10px;">OFFICIAL</span>`
+          : `<span class="badge" style="background: rgba(255,255,255,0.06); color: var(--text-muted); font-size: 10px;">COMMUNITY</span>`;
         const iconSrc = s.iconUrl || `/assets/servers/${encodeURIComponent(s.id)}.png`;
         const initial = (s.name || 'S').charAt(0).toUpperCase();
-
         return `
           <tr>
             <td style="font-family: var(--mono); color: var(--text-muted); font-size: 12px; font-weight: 700;">#${idx + 1}</td>
             <td>
               <div style="width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--card-border);">
-                <img src="${iconSrc}" alt="" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='block';" />
+                <img src="${iconSrc}" alt="" style="width: 100%; height: 100%; object-fit: contain;" onerror="this.style.display='none'; if(this.nextElementSibling) this.nextElementSibling.style.display='flex';" />
                 <span style="display: none; font-size: 12px; font-weight: 800; color: var(--accent);">${initial}</span>
               </div>
             </td>
             <td>
               <div style="font-weight: 700; color: #fff;">${escapeHtml(s.name)}</div>
-              <div style="font-family: var(--mono); font-size: 11px; color: var(--text-muted);">id: ${escapeHtml(s.id)}</div>
+              <div style="font-family: var(--mono); font-size: 10px; color: var(--text-muted);">id: ${escapeHtml(s.id)}</div>
             </td>
             <td>
-              <code style="color: #93c5fd; font-size: 12.5px;">${fullAddr}</code>
-              ${s.defaultMotd ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.defaultMotd)}</div>` : ''}
+              <code style="color: #93c5fd; font-size: 12px;">${fullAddr}</code>
+              ${s.defaultMotd ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.defaultMotd)}</div>` : ''}
             </td>
             <td>${tagBadge}</td>
             <td>${typeBadge}</td>
             <td style="text-align: right;">
               <div style="display: inline-flex; gap: 4px; align-items: center;">
-                <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" title="Move Up" ${idx === 0 ? 'disabled style="opacity:0.3; cursor:default;"' : ''} onclick="moveServer('${escapeHtml(s.id)}', -1)">↑</button>
-                <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" title="Move Down" ${idx === servers.length - 1 ? 'disabled style="opacity:0.3; cursor:default;"' : ''} onclick="moveServer('${escapeHtml(s.id)}', 1)">↓</button>
+                <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" title="Move Up" ${idx === 0 ? 'disabled' : ''} onclick="moveServer('${escapeHtml(s.id)}', -1)">↑</button>
+                <button class="btn-action" style="padding: 4px 8px; font-size: 11px;" title="Move Down" ${idx === servers.length - 1 ? 'disabled' : ''} onclick="moveServer('${escapeHtml(s.id)}', 1)">↓</button>
                 <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="editServer('${escapeHtml(s.id)}')">Edit</button>
                 <button class="btn-action danger" style="padding: 4px 8px; font-size: 11px;" title="Delete" onclick="deleteServer('${escapeHtml(s.id)}')">✕</button>
               </div>
@@ -1485,53 +1857,40 @@
       serverFormError.style.display = 'none';
       if (server) {
         serverModalTitle.innerText = `Edit: ${server.name}`;
-        document.getElementById('server-edit-id').value = server.id || '';
-        document.getElementById('server-name').value = server.name || '';
-        document.getElementById('server-ip').value = server.ip || '';
-        document.getElementById('server-port').value = server.port ?? 25565;
-        document.getElementById('server-tag').value = server.tag || '';
-        document.getElementById('server-tagclass').value = server.tagClass || '';
-        document.getElementById('server-motd').value = server.defaultMotd || '';
-        document.getElementById('server-players').value = server.defaultPlayers || '';
-        document.getElementById('server-official').value = server.isOfficial ? 'true' : 'false';
-        document.getElementById('server-icon').value = server.iconUrl || '';
+        document.getElementById('server-edit-id').value     = server.id || '';
+        document.getElementById('server-name').value        = server.name || '';
+        document.getElementById('server-ip').value          = server.ip || '';
+        document.getElementById('server-port').value        = server.port ?? 25565;
+        document.getElementById('server-tag').value         = server.tag || '';
+        document.getElementById('server-tagclass').value    = server.tagClass || '';
+        document.getElementById('server-motd').value        = server.defaultMotd || '';
+        document.getElementById('server-players').value     = server.defaultPlayers || '';
+        document.getElementById('server-official').value    = server.isOfficial ? 'true' : 'false';
+        document.getElementById('server-icon').value        = server.iconUrl || '';
       } else {
         serverModalTitle.innerText = 'Add Quick Play Server';
         serverForm.reset();
         document.getElementById('server-edit-id').value = '';
-        document.getElementById('server-port').value = '25565';
+        document.getElementById('server-port').value    = '25565';
         document.getElementById('server-tagclass').value = 'ok';
         document.getElementById('server-official').value = 'false';
       }
-      serverModal.style.display = 'flex';
+      serverModal.classList.add('open');
     };
 
-    window.closeServerModal = function() {
-      serverModal.style.display = 'none';
-    };
-
-    window.editServer = function(id) {
-      const s = cachedServers.find(x => x.id === id);
-      if (s) openServerModal(s);
-    };
+    window.closeServerModal = function() { serverModal.classList.remove('open'); };
+    window.editServer = function(id) { const s = cachedServers.find(x => x.id === id); if (s) openServerModal(s); };
 
     window.deleteServer = async function(id) {
       const s = cachedServers.find(x => x.id === id);
-      const name = s ? s.name : id;
-      if (!confirm(`Are you sure you want to remove "${name}" from Quick Play?`)) return;
+      if (!confirm(`Remove "${s ? s.name : id}" from Quick Play?`)) return;
       try {
         const res = await fetch(`/api/admin/servers?id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.ok) {
-          loadServers();
-        } else {
-          alert('Failed to delete server.');
-        }
-      } catch {
-        alert('Network error deleting server.');
-      }
+        if (res.ok) loadServers(); else alert('Failed to delete server.');
+      } catch { alert('Network error deleting server.'); }
     };
 
     window.moveServer = async function(id, dir) {
@@ -1539,119 +1898,70 @@
       if (idx === -1) return;
       const targetIdx = idx + dir;
       if (targetIdx < 0 || targetIdx >= cachedServers.length) return;
-
       const next = [...cachedServers];
-      const temp = next[idx];
-      next[idx] = next[targetIdx];
-      next[targetIdx] = temp;
-
+      [next[idx], next[targetIdx]] = [next[targetIdx], next[idx]];
       try {
         const res = await fetch('/api/admin/servers', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ servers: next })
         });
-        if (res.ok) {
-          cachedServers = next;
-          renderServersTable(cachedServers);
-        }
-      } catch (err) {
-        console.warn('Reorder failed:', err);
-      }
+        if (res.ok) { cachedServers = next; renderServersTable(cachedServers); }
+      } catch {}
     };
 
     btnAddServer.addEventListener('click', () => openServerModal());
     serverModalClose.addEventListener('click', closeServerModal);
     serverModalCancel.addEventListener('click', closeServerModal);
+    serverModal.addEventListener('click', (e) => { if (e.target === serverModal) closeServerModal(); });
     btnRefreshServers.addEventListener('click', loadServers);
 
     btnResetServers.addEventListener('click', async () => {
-      if (!confirm('Reset Quick Play servers to default list (Hypixel, DonutSMP, ManaCube, CubeCraft)?')) return;
+      if (!confirm('Reset Quick Play servers to default list?')) return;
       try {
         const res = await fetch('/api/admin/servers', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ action: 'reset' })
         });
-        if (res.ok) {
-          loadServers();
-        }
-      } catch {
-        alert('Reset failed.');
-      }
+        if (res.ok) loadServers();
+      } catch { alert('Reset failed.'); }
     });
 
     serverForm.addEventListener('submit', async (e) => {
       e.preventDefault();
       serverFormError.style.display = 'none';
-
-      const existingId = document.getElementById('server-edit-id').value.trim();
-      const name = document.getElementById('server-name').value.trim();
-      const ip = document.getElementById('server-ip').value.trim();
-      const portRaw = document.getElementById('server-port').value.trim();
-      const tag = document.getElementById('server-tag').value.trim();
-      const tagClass = document.getElementById('server-tagclass').value;
-      const defaultMotd = document.getElementById('server-motd').value.trim();
+      const existingId     = document.getElementById('server-edit-id').value.trim();
+      const name           = document.getElementById('server-name').value.trim();
+      const ip             = document.getElementById('server-ip').value.trim();
+      const portRaw        = document.getElementById('server-port').value.trim();
+      const tag            = document.getElementById('server-tag').value.trim();
+      const tagClass       = document.getElementById('server-tagclass').value;
+      const defaultMotd    = document.getElementById('server-motd').value.trim();
       const defaultPlayers = document.getElementById('server-players').value.trim() || 'Online';
-      const isOfficial = document.getElementById('server-official').value === 'true';
-      const iconUrl = document.getElementById('server-icon').value.trim() || undefined;
-
-      const port = portRaw ? parseInt(portRaw, 10) : 25565;
-      const id = existingId || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `server-${Date.now()}`;
-
-      const serverPayload = {
-        id,
-        name,
-        ip,
-        port,
-        tag,
-        tagClass,
-        defaultMotd,
-        defaultPlayers,
-        isOfficial,
-        iconUrl
-      };
-
+      const isOfficial     = document.getElementById('server-official').value === 'true';
+      const iconUrl        = document.getElementById('server-icon').value.trim() || undefined;
+      const port           = portRaw ? parseInt(portRaw, 10) : 25565;
+      const id             = existingId || name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || `server-${Date.now()}`;
       try {
         const res = await fetch('/api/admin/servers', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ server: serverPayload })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ server: { id, name, ip, port, tag, tagClass, defaultMotd, defaultPlayers, isOfficial, iconUrl } })
         });
         const data = await res.json();
-        if (res.ok) {
-          closeServerModal();
-          loadServers();
-        } else {
-          serverFormError.innerText = data.error || 'Failed to save server';
-          serverFormError.style.display = 'block';
-        }
-      } catch {
-        serverFormError.innerText = 'Network error saving server';
-        serverFormError.style.display = 'block';
-      }
+        if (res.ok) { closeServerModal(); loadServers(); }
+        else { serverFormError.innerText = data.error || 'Failed to save server'; serverFormError.style.display = 'block'; }
+      } catch { serverFormError.innerText = 'Network error saving server'; serverFormError.style.display = 'block'; }
     });
 
-    // News & Announcements Management
+    /* ───────────── News & Announcements ───────────── */
     async function loadNews() {
       try {
         const res = await fetch('/api/admin/news', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.status === 401) {
-          localStorage.removeItem('speedy_admin_token');
-          location.reload();
-          return;
-        }
+        if (res.status === 401) { localStorage.removeItem('speedy_admin_token'); location.reload(); return; }
         const data = await res.json();
         cachedNews = Array.isArray(data?.news) ? data.news : [];
         badgeNews.innerText = cachedNews.length;
@@ -1663,22 +1973,25 @@
 
     function renderNewsTable(items) {
       if (!items || items.length === 0) {
-        newsTbody.innerHTML = '<tr><td colspan="6" class="table-empty">No announcements published yet. Click "+ Add Announcement" or "Reset Defaults".</td></tr>';
+        newsTbody.innerHTML = '<tr><td colspan="6" class="table-empty">No announcements yet. Click "+ Add Announcement" or "Reset Defaults".</td></tr>';
         return;
       }
-      newsTbody.innerHTML = items.map((n, idx) => {
+      newsTbody.innerHTML = items.map(n => {
         const thumb = n.imageUrl || 'https://launchercontent.mojang.com/v1/news/news-bg-default.jpg';
-        const tag = n.tag ? `<span class="badge" style="background:rgba(255,255,255,0.06); font-size:10px;">${escapeHtml(n.tag)}</span>` : '<span style="color:var(--text-muted); font-size:11px;">—</span>';
-        const link = n.url ? `<a href="${escapeHtml(n.url)}" target="_blank" style="color:#93c5fd; font-size:12px; text-decoration:none;">Open Link ↗</a>` : '<span style="color:var(--text-muted); font-size:11px;">None</span>';
-
+        const tag   = n.tag
+          ? `<span class="badge" style="background:rgba(255,255,255,0.06); font-size:10px;">${escapeHtml(n.tag)}</span>`
+          : `<span style="color:var(--text-muted); font-size:11px;">—</span>`;
+        const link  = n.url
+          ? `<a href="${escapeHtml(n.url)}" target="_blank" style="color:#93c5fd; font-size:12px; text-decoration:none;">Open ↗</a>`
+          : `<span style="color:var(--text-muted); font-size:11px;">—</span>`;
         return `
           <tr>
             <td>
-              <div style="width: 50px; height: 32px; border-radius: 4px; background-image: url('${escapeHtml(thumb)}'); background-size: cover; background-position: center; border: 1px solid var(--card-border);"></div>
+              <div style="width: 52px; height: 34px; border-radius: 5px; background-image: url('${escapeHtml(thumb)}'); background-size: cover; background-position: center; border: 1px solid var(--card-border);"></div>
             </td>
             <td>
-              <div style="font-weight: 700; color: #fff; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(n.title)}</div>
-              ${n.details ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(n.details)}</div>` : ''}
+              <div style="font-weight: 700; color: #fff; max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(n.title)}</div>
+              ${n.details ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(n.details)}</div>` : ''}
             </td>
             <td>${tag}</td>
             <td style="color: var(--text-muted); font-size: 11px; white-space: nowrap;">${escapeHtml(n.date || '—')}</td>
@@ -1686,7 +1999,7 @@
             <td style="text-align: right;">
               <div style="display: inline-flex; gap: 6px; align-items: center;">
                 <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="editNews('${escapeHtml(n.id)}')">Edit</button>
-                <button class="btn-action danger" style="padding: 4px 8px; font-size: 11px;" title="Delete" onclick="deleteNews('${escapeHtml(n.id)}')">✕</button>
+                <button class="btn-action danger" style="padding: 4px 8px; font-size: 11px;" onclick="deleteNews('${escapeHtml(n.id)}')">✕</button>
               </div>
             </td>
           </tr>
@@ -1697,66 +2010,53 @@
     window.openNewsModal = function(item = null) {
       newsFormError.style.display = 'none';
       if (item) {
-        newsModalTitle.innerText = 'Edit Announcement';
-        newsEditId.value = item.id || '';
-        newsInputTitle.value = item.title || '';
-        newsInputTag.value = item.tag || '';
-        newsInputDate.value = item.date || '';
-        newsInputThumb.value = item.imageUrl || '';
-        newsInputLink.value = item.url || '';
-        newsInputDetails.value = item.details || '';
+        newsModalTitle.innerText    = 'Edit Announcement';
+        newsEditId.value            = item.id || '';
+        newsInputTitle.value        = item.title || '';
+        newsInputTag.value          = item.tag || '';
+        newsInputDate.value         = item.date || '';
+        newsInputThumb.value        = item.imageUrl || '';
+        newsInputLink.value         = item.url || '';
+        newsInputDetails.value      = item.details || '';
       } else {
-        newsModalTitle.innerText = 'Add Announcement';
-        newsEditId.value = '';
-        newsInputTitle.value = '';
-        newsInputTag.value = 'ANNOUNCEMENT';
-        newsInputDate.value = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-        newsInputThumb.value = '';
-        newsInputLink.value = '';
-        newsInputDetails.value = '';
+        newsModalTitle.innerText    = 'Add Announcement';
+        newsEditId.value            = '';
+        newsInputTitle.value        = '';
+        newsInputTag.value          = 'ANNOUNCEMENT';
+        newsInputDate.value         = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        newsInputThumb.value        = '';
+        newsInputLink.value         = '';
+        newsInputDetails.value      = '';
       }
       updateNewsThumbPreview();
-      newsModal.style.display = 'flex';
+      newsModal.classList.add('open');
     };
 
-    window.closeNewsModal = function() {
-      newsModal.style.display = 'none';
-    };
+    window.closeNewsModal = function() { newsModal.classList.remove('open'); };
 
     function updateNewsThumbPreview() {
       const url = newsInputThumb.value.trim();
       newsThumbPreview.style.backgroundImage = url ? `url('${url}')` : 'none';
     }
-
     newsInputThumb.addEventListener('input', updateNewsThumbPreview);
 
-    window.editNews = function(id) {
-      const n = cachedNews.find(x => x.id === id);
-      if (n) openNewsModal(n);
-    };
-
+    window.editNews   = function(id) { const n = cachedNews.find(x => x.id === id); if (n) openNewsModal(n); };
     window.deleteNews = async function(id) {
       const n = cachedNews.find(x => x.id === id);
-      const title = n ? n.title : id;
-      if (!confirm(`Delete announcement "${title}"?`)) return;
+      if (!confirm(`Delete announcement "${n ? n.title : id}"?`)) return;
       try {
         const res = await fetch(`/api/admin/news?id=${encodeURIComponent(id)}`, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (res.ok) {
-          loadNews();
-        } else {
-          alert('Failed to delete announcement.');
-        }
-      } catch {
-        alert('Network error deleting announcement.');
-      }
+        if (res.ok) loadNews(); else alert('Failed to delete announcement.');
+      } catch { alert('Network error deleting announcement.'); }
     };
 
     btnAddNews.addEventListener('click', () => openNewsModal());
     newsModalClose.addEventListener('click', closeNewsModal);
     newsModalCancel.addEventListener('click', closeNewsModal);
+    newsModal.addEventListener('click', (e) => { if (e.target === newsModal) closeNewsModal(); });
     btnRefreshNews.addEventListener('click', loadNews);
 
     btnResetNews.addEventListener('click', async () => {
@@ -1764,195 +2064,175 @@
       try {
         const res = await fetch('/api/admin/news', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({ action: 'reset' })
         });
-        if (res.ok) {
-          loadNews();
-        }
-      } catch {
-        alert('Reset failed.');
-      }
+        if (res.ok) loadNews();
+      } catch { alert('Reset failed.'); }
     });
 
-    newsModalSave.addEventListener('click', async (e) => {
-      e.preventDefault();
+    newsModalSave.addEventListener('click', async () => {
       newsFormError.style.display = 'none';
       const existingId = newsEditId.value.trim();
-      const title = newsInputTitle.value.trim();
+      const title      = newsInputTitle.value.trim();
       if (!title) {
         newsFormError.innerText = 'Title is required.';
         newsFormError.style.display = 'block';
         return;
       }
-      const tag = newsInputTag.value.trim() || 'UPDATE';
-      const date = newsInputDate.value.trim() || 'Recent';
+      const tag      = newsInputTag.value.trim() || 'UPDATE';
+      const date     = newsInputDate.value.trim() || 'Recent';
       const imageUrl = newsInputThumb.value.trim();
-      const url = newsInputLink.value.trim();
-      const details = newsInputDetails.value.trim();
-      const id = existingId || `news-${Date.now()}`;
-
+      const url      = newsInputLink.value.trim();
+      const details  = newsInputDetails.value.trim();
+      const id       = existingId || `news-${Date.now()}`;
+      const newsItem = { id, title, tag, date, imageUrl, url, details };
       try {
         const res = await fetch('/api/admin/news', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify({ item: { id, title, tag, date, imageUrl, url, details } })
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ newsItem })   // ← FIXED: use 'newsItem' key (matches backend: body?.newsItem || body?.title)
         });
         const data = await res.json();
-        if (res.ok) {
-          closeNewsModal();
-          loadNews();
-        } else {
-          newsFormError.innerText = data.error || 'Failed to save announcement';
-          newsFormError.style.display = 'block';
-        }
-      } catch {
-        newsFormError.innerText = 'Network error saving announcement';
-        newsFormError.style.display = 'block';
-      }
+        if (res.ok) { closeNewsModal(); loadNews(); }
+        else { newsFormError.innerText = data.error || 'Failed to save announcement'; newsFormError.style.display = 'block'; }
+      } catch { newsFormError.innerText = 'Network error saving announcement'; newsFormError.style.display = 'block'; }
     });
 
-    // SSE Stream
+    /* ───────────── SSE Stream ───────────── */
     function startStream() {
       if (evtSource) evtSource.close();
       evtSource = new EventSource(`/api/admin/live-stream?token=${encodeURIComponent(token)}`);
 
       evtSource.onopen = () => {
         liveStatus.innerText = 'Render Service Live';
-        liveDot.style.background = 'var(--success)';
-        liveDot.style.boxShadow = '0 0 10px var(--success)';
+        liveDot.style.background  = 'var(--success)';
+        liveDot.style.boxShadow   = '0 0 10px var(--success)';
       };
 
       evtSource.addEventListener('connected', (e) => {
         const data = JSON.parse(e.data);
-        valOnline.innerText = data.onlineUsers || 0;
-        valLaunchers.innerText = data.onlineLaunchers || 0;
+        setStatVal(valOnline,    data.onlineUsers || 0);
+        setStatVal(valLaunchers, data.onlineLaunchers || 0);
       });
 
       evtSource.addEventListener('startup', (e) => {
         const data = JSON.parse(e.data);
-        valLaunchers.innerText = data.activeLaunchers || (Number(valLaunchers.innerText) + 1);
+        setStatVal(valLaunchers, data.activeLaunchers || (Number(valLaunchers.innerText) + 1));
         badgeLaunchers.innerText = valLaunchers.innerText;
-        appendLog(Date.now(), 'startup', 'LAUNCHER', `🟢 Launcher started on ${data.platform || 'windows'} (${data.deviceId || 'spd-client'}) v${data.version || '1.0.0'}`);
+        appendLog(Date.now(), 'startup', 'LAUNCHER', `Launcher started on ${data.platform || 'windows'} (${data.deviceId || 'spd-client'}) v${data.version || '1.0.0'}`, true, '🟢');
         fetchMetrics();
       });
 
       evtSource.addEventListener('shutdown', (e) => {
         const data = JSON.parse(e.data);
-        valLaunchers.innerText = data.activeLaunchers ?? Math.max(0, Number(valLaunchers.innerText) - 1);
+        setStatVal(valLaunchers, data.activeLaunchers ?? Math.max(0, Number(valLaunchers.innerText) - 1));
         badgeLaunchers.innerText = valLaunchers.innerText;
-        appendLog(Date.now(), 'shutdown', 'LAUNCHER', `🔴 Launcher closed (${data.deviceId || 'spd-client'}) — Uptime: ${data.uptimeSeconds || 0}s`);
+        appendLog(Date.now(), 'shutdown', 'LAUNCHER', `Launcher closed (${data.deviceId || 'spd-client'}) — Uptime: ${data.uptimeSeconds || 0}s`, true, '🔴');
         fetchMetrics();
       });
 
       evtSource.addEventListener('presence', (e) => {
         const data = JSON.parse(e.data);
-        valOnline.innerText = data.onlineUsers || 0;
-        appendLog(Date.now(), 'social', 'PRESENCE', `User ${data.userId || data.username} is ${data.status}`);
+        setStatVal(valOnline, data.onlineUsers || 0);
+        appendLog(Date.now(), 'social', 'PRESENCE', `User ${data.userId || data.username} is ${data.status}`, true, '👤');
       });
 
       evtSource.addEventListener('game_launch', (e) => {
         const data = JSON.parse(e.data);
-        appendLog(data.ts || Date.now(), 'info', 'GAME', `🎮 Minecraft ${data.mcVersion || ''} launched on [${data.instanceId || 'default'}]`);
+        appendLog(data.ts || Date.now(), 'info', 'GAME', `Minecraft ${data.mcVersion || ''} launched on [${data.instanceId || 'default'}]`, true, '🎮');
       });
 
       evtSource.addEventListener('game_exit', (e) => {
         const data = JSON.parse(e.data);
-        appendLog(data.ts || Date.now(), 'info', 'GAME', `🎮 Minecraft exited normally (code ${data.code ?? 0}) on [${data.instanceId || 'default'}]`);
+        appendLog(data.ts || Date.now(), 'info', 'GAME', `Minecraft exited (code ${data.code ?? 0}) on [${data.instanceId || 'default'}]`, true, '🎮');
       });
 
       evtSource.addEventListener('app_error', (e) => {
         const err = JSON.parse(e.data);
-        valErrors.innerText = (Number(valErrors.innerText) || 0) + 1;
+        setStatVal(valErrors, (Number(valErrors.innerText) || 0) + 1);
         badgeErrors.innerText = valErrors.innerText;
-        appendLog(err.ts || Date.now(), err.level || 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
+        appendLog(err.ts || Date.now(), err.level || 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`, true, '❌');
       });
 
       evtSource.addEventListener('error', (e) => {
         if (e.data) {
           try {
             const err = JSON.parse(e.data);
-            valErrors.innerText = (Number(valErrors.innerText) || 0) + 1;
+            setStatVal(valErrors, (Number(valErrors.innerText) || 0) + 1);
             badgeErrors.innerText = valErrors.innerText;
-            appendLog(err.ts || Date.now(), err.level || 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`);
+            appendLog(err.ts || Date.now(), err.level || 'error', err.subsystem || 'CLIENT', `${err.message} ${err.stack ? '(' + err.stack.slice(0, 100) + '...)' : ''}`, true, '❌');
           } catch {}
         } else {
           liveStatus.innerText = 'Reconnecting (Render sleep/wake)...';
           liveDot.style.background = 'var(--warning)';
-          liveDot.style.boxShadow = '0 0 10px var(--warning)';
+          liveDot.style.boxShadow  = '0 0 10px var(--warning)';
         }
       });
 
       evtSource.addEventListener('download', (e) => {
         const dl = JSON.parse(e.data);
-        valDownloads.innerText = (Number(valDownloads.innerText) || 0) + 1;
-        appendLog(Date.now(), 'download', 'DOWNLOAD', `Downloaded asset: ${dl.url} (${formatBytes(dl.size)}) - ${dl.status}`);
+        setStatVal(valDownloads, (Number(valDownloads.innerText) || 0) + 1);
+        appendLog(Date.now(), 'download', 'DOWNLOAD', `Downloaded asset: ${dl.url} (${formatBytes(dl.size)}) - ${dl.status}`, true, '📥');
       });
 
       evtSource.addEventListener('events', (e) => {
         const data = JSON.parse(e.data);
-        appendLog(Date.now(), 'info', 'BATCH', `Processed batch of ${data.count} telemetry event(s)`);
+        appendLog(Date.now(), 'info', 'BATCH', `Processed batch of ${data.count} telemetry event(s)`, true, '📦');
       });
 
       evtSource.addEventListener('errors_cleared', () => {
-        appendLog(Date.now(), 'info', 'SYSTEM', `Admin cleared error history.`);
+        appendLog(Date.now(), 'info', 'SYSTEM', 'Admin cleared error history.', true, '🗑');
+        loadErrors();
       });
 
       evtSource.addEventListener('servers_updated', () => {
-        appendLog(Date.now(), 'info', 'SERVERS', `Quick Play servers list was updated.`);
+        appendLog(Date.now(), 'info', 'SERVERS', 'Quick Play servers list was updated.', true, '🎮');
         loadServers();
       });
 
       evtSource.addEventListener('news_updated', () => {
-        appendLog(Date.now(), 'info', 'NEWS', `News announcements were updated.`);
+        appendLog(Date.now(), 'info', 'NEWS', 'News announcements were updated.', true, '📰');
         loadNews();
       });
     }
 
-    function appendLog(ts, level, subsystem, msg, shouldSave = true) {
-      const key = `${ts}-${level}-${subsystem}-${msg.slice(0, 40)}`;
+    /* ───────────── appendLog ───────────── */
+    function appendLog(ts, level, subsystem, msg, shouldSave = true, icon = '') {
+      if (!terminalFeed) return;
+      const key = `${ts}-${level}-${subsystem}-${String(msg).slice(0, 40)}`;
       if (seenLogKeys.has(key)) return;
       seenLogKeys.add(key);
+
+      const iconMap = {
+        startup: '🟢', shutdown: '🔴', error: '❌', download: '📥',
+        social: '👤', info: '📋'
+      };
+      const displayIcon = icon || iconMap[level] || '📋';
 
       const row = document.createElement('div');
       row.className = 'log-row';
       row.setAttribute('data-ts', ts);
       row.setAttribute('data-level', level);
       row.setAttribute('data-subsystem', subsystem);
-      row.setAttribute('data-msg', msg);
+      row.setAttribute('data-msg', String(msg).slice(0, 500));
 
       const timeStr = new Date(ts).toLocaleTimeString();
       row.innerHTML = `
         <span class="log-time">[${timeStr}]</span>
+        <span class="log-icon">${displayIcon}</span>
         <span class="log-level ${level}">${level.toUpperCase()}</span>
         <span class="log-subsys">[${subsystem || 'SYS'}]</span>
-        <span class="log-msg">${escapeHtml(msg)}</span>
+        <span class="log-msg">${escapeHtml(String(msg))}</span>
       `;
       terminalFeed.prepend(row);
       if (terminalFeed.children.length > 300) {
         terminalFeed.removeChild(terminalFeed.lastChild);
       }
-      if (shouldSave) {
-        saveLogsToStorage();
+      if (chkAutoscroll && chkAutoscroll.checked) {
+        terminalFeed.scrollTop = 0;
       }
-    }
-
-    function escapeHtml(s) {
-      return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-
-    function formatBytes(bytes) {
-      if (!bytes || bytes === 0) return '0 B';
-      const k = 1024;
-      const sizes = ['B', 'KB', 'MB', 'GB'];
-      const i = Math.floor(Math.log(bytes) / Math.log(k));
-      return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+      if (shouldSave) saveLogsToStorage();
     }
   </script>
 </body>
