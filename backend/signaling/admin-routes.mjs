@@ -479,6 +479,77 @@ export function handleAdminAndTelemetry(req, res, { store, sessions, SECRET }) {
     return true;
   }
 
+  // 14. Public News API (Consumed by Speedy Launcher)
+  if (url === '/api/news' && method === 'GET') {
+    store.getNews().then((news) => {
+      json(200, { ok: true, news, total: news.length });
+    }).catch((e) => json(500, { ok: false, news: [], error: e.message }));
+    return true;
+  }
+
+  // 15. Admin News List API
+  if (url === '/api/admin/news' && method === 'GET') {
+    if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
+    store.getNews().then((news) => {
+      json(200, { ok: true, news, total: news.length });
+    }).catch((e) => json(500, { ok: false, error: e.message }));
+    return true;
+  }
+
+  // 16. Admin News Create / Update / Save API
+  if (url === '/api/admin/news' && method === 'POST') {
+    if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
+    readJsonBody(req, async (err, body) => {
+      if (err) return json(400, { error: 'Invalid JSON' });
+      try {
+        let news;
+        if (body?.action === 'reset') {
+          news = await store.resetNews();
+        } else if (Array.isArray(body?.news)) {
+          news = await store.saveNews(body.news);
+        } else if (body?.newsItem || body?.title) {
+          const item = body?.newsItem || body;
+          await store.addOrUpdateNews(item);
+          news = await store.getNews();
+        } else {
+          return json(400, { error: 'Missing news data' });
+        }
+        broadcastAdminEvent('news_updated', { news, count: news.length });
+        return json(200, { ok: true, news });
+      } catch (e) {
+        return json(500, { error: e.message });
+      }
+    });
+    return true;
+  }
+
+  // 17. Admin News Delete API
+  if (url === '/api/admin/news' && (method === 'DELETE' || (method === 'POST' && reqUrl.searchParams.get('action') === 'delete'))) {
+    if (!checkAdminAuth()) return json(401, { error: 'Unauthorized' });
+    const queryId = reqUrl.searchParams.get('id');
+    if (queryId) {
+      store.deleteNews(queryId).then(async () => {
+        const news = await store.getNews();
+        broadcastAdminEvent('news_updated', { news, count: news.length });
+        json(200, { ok: true, news });
+      }).catch((e) => json(500, { error: e.message }));
+      return true;
+    }
+    readJsonBody(req, async (err, body) => {
+      const id = body?.id;
+      if (!id) return json(400, { error: 'Missing news id' });
+      try {
+        await store.deleteNews(id);
+        const news = await store.getNews();
+        broadcastAdminEvent('news_updated', { news, count: news.length });
+        return json(200, { ok: true, news });
+      } catch (e) {
+        return json(500, { error: e.message });
+      }
+    });
+    return true;
+  }
+
   return false;
 }
 

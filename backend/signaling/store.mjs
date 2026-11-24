@@ -63,6 +63,22 @@ export const DEFAULT_FEATURED_SERVERS = [
   },
 ];
 
+export const DEFAULT_NEWS_ITEMS = [
+  {
+    id: 'speedy-announcement-1',
+    title: 'Speedy Client 1.21.4 Performance & UI Update',
+    tag: 'ANNOUNCEMENT',
+    tagClass: 'ok',
+    thumbnail: 'https://launchercontent.mojang.com/v1/news/news-header-1.21.4.jpg',
+    link: 'https://www.minecraft.net',
+    details: 'FastClient performance improvements, updated Fabric support, and modern UI enhancements are now live.',
+    date: 'Nov 2026',
+    isOfficial: false,
+    sortOrder: 0,
+    created: Date.now()
+  }
+];
+
 export function createMemoryStore() {
   const users = new Map();            // id -> user
   const byName = new Map();           // lowercased username -> user
@@ -305,6 +321,68 @@ export function createMemoryStore() {
     async resetFeaturedServers() {
       this._featuredServers = DEFAULT_FEATURED_SERVERS.map(s => ({ ...s }));
       return this.getFeaturedServers();
+    },
+    // ---- News & Announcements (Memory Mode) ----
+    async getNews() {
+      if (!this._newsItems) {
+        this._newsItems = DEFAULT_NEWS_ITEMS.map(n => ({ ...n }));
+      }
+      return this._newsItems.slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    },
+    async saveNews(list) {
+      if (Array.isArray(list)) {
+        this._newsItems = list.map((item, idx) => ({
+          id: String(item.id || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId(),
+          title: String(item.title || '').trim(),
+          tag: String(item.tag || 'ANNOUNCEMENT').trim(),
+          tagClass: String(item.tagClass || 'ok').trim(),
+          thumbnail: String(item.thumbnail || '').trim(),
+          link: String(item.link || '').trim(),
+          details: String(item.details || '').trim(),
+          date: String(item.date || '').trim(),
+          isOfficial: !!item.isOfficial,
+          sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : idx,
+          created: item.created || Date.now(),
+        }));
+      }
+      return this.getNews();
+    },
+    async addOrUpdateNews(item) {
+      if (!this._newsItems) {
+        this._newsItems = DEFAULT_NEWS_ITEMS.map(n => ({ ...n }));
+      }
+      const id = String(item.id || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId();
+      const existingIdx = this._newsItems.findIndex(n => n.id === id);
+      const entry = {
+        id,
+        title: String(item.title || 'Announcement').trim(),
+        tag: String(item.tag || 'ANNOUNCEMENT').trim(),
+        tagClass: String(item.tagClass || 'ok').trim(),
+        thumbnail: String(item.thumbnail || '').trim(),
+        link: String(item.link || '').trim(),
+        details: String(item.details || '').trim(),
+        date: String(item.date || 'Nov 2026').trim(),
+        isOfficial: !!item.isOfficial,
+        sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : (existingIdx >= 0 ? this._newsItems[existingIdx].sortOrder : this._newsItems.length),
+        created: item.created || Date.now(),
+      };
+      if (existingIdx >= 0) {
+        this._newsItems[existingIdx] = entry;
+      } else {
+        this._newsItems.push(entry);
+      }
+      return entry;
+    },
+    async deleteNews(id) {
+      if (!this._newsItems) {
+        this._newsItems = DEFAULT_NEWS_ITEMS.map(n => ({ ...n }));
+      }
+      this._newsItems = this._newsItems.filter(n => n.id !== id);
+      return { ok: true };
+    },
+    async resetNews() {
+      this._newsItems = DEFAULT_NEWS_ITEMS.map(n => ({ ...n }));
+      return this.getNews();
     },
   };
 }
@@ -640,6 +718,110 @@ export function createTursoStore({ url, token }) {
     async resetFeaturedServers() {
       await db.exec('DELETE FROM featured_servers', []).catch(() => {});
       return this.getFeaturedServers();
+    },
+    // ---- News & Announcements (Turso Persistent Mode) ----
+    async getNews() {
+      await db.exec(`CREATE TABLE IF NOT EXISTS news_items (
+        id TEXT PRIMARY KEY,
+        title TEXT NOT NULL,
+        tag TEXT DEFAULT 'ANNOUNCEMENT',
+        tag_class TEXT DEFAULT 'ok',
+        thumbnail TEXT DEFAULT '',
+        link TEXT DEFAULT '',
+        details TEXT DEFAULT '',
+        date TEXT DEFAULT '',
+        is_official INTEGER DEFAULT 0,
+        sort_order INTEGER DEFAULT 0,
+        created INTEGER
+      )`).catch(() => {});
+
+      const rows = await one('SELECT id, title, tag, tag_class as tagClass, thumbnail, link, details, date, is_official as isOfficial, sort_order as sortOrder, created FROM news_items ORDER BY sort_order ASC, created DESC', []).catch(() => []);
+      if (!rows || rows.length === 0) {
+        const now = Date.now();
+        const stmts = DEFAULT_NEWS_ITEMS.map((n, idx) => ({
+          sql: 'INSERT INTO news_items (id, title, tag, tag_class, thumbnail, link, details, date, is_official, sort_order, created) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+          args: [n.id, n.title, n.tag, n.tagClass, n.thumbnail, n.link, n.details, n.date, n.isOfficial ? 1 : 0, idx, now + idx]
+        }));
+        await db.batch(stmts).catch(() => {});
+        return DEFAULT_NEWS_ITEMS.map(n => ({ ...n }));
+      }
+      return rows.map(r => ({
+        id: r.id,
+        title: r.title,
+        tag: r.tag || '',
+        tagClass: r.tagClass || 'ok',
+        thumbnail: r.thumbnail || '',
+        link: r.link || '',
+        details: r.details || '',
+        date: r.date || '',
+        isOfficial: Boolean(r.isOfficial),
+        sortOrder: Number(r.sortOrder || 0),
+        created: Number(r.created || 0),
+      }));
+    },
+    async saveNews(list) {
+      if (!Array.isArray(list)) return this.getNews();
+      await db.exec('DELETE FROM news_items', []).catch(() => {});
+      const now = Date.now();
+      const stmts = list.map((n, idx) => {
+        const id = String(n.id || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId();
+        return {
+          sql: 'INSERT INTO news_items (id, title, tag, tag_class, thumbnail, link, details, date, is_official, sort_order, created) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+          args: [
+            id,
+            String(n.title || '').trim(),
+            String(n.tag || 'ANNOUNCEMENT').trim(),
+            String(n.tagClass || 'ok').trim(),
+            String(n.thumbnail || '').trim(),
+            String(n.link || '').trim(),
+            String(n.details || '').trim(),
+            String(n.date || '').trim(),
+            n.isOfficial ? 1 : 0,
+            typeof n.sortOrder === 'number' ? n.sortOrder : idx,
+            n.created || now + idx,
+          ]
+        };
+      });
+      await db.batch(stmts).catch(() => {});
+      return this.getNews();
+    },
+    async addOrUpdateNews(n) {
+      const id = String(n.id || newId()).trim().toLowerCase().replace(/[^a-z0-9_-]/g, '') || newId();
+      await db.exec(`
+        INSERT INTO news_items (id, title, tag, tag_class, thumbnail, link, details, date, is_official, sort_order, created)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        ON CONFLICT(id) DO UPDATE SET
+          title = excluded.title,
+          tag = excluded.tag,
+          tag_class = excluded.tag_class,
+          thumbnail = excluded.thumbnail,
+          link = excluded.link,
+          details = excluded.details,
+          date = excluded.date,
+          is_official = excluded.is_official,
+          sort_order = excluded.sort_order
+      `, [
+        id,
+        String(n.title || '').trim(),
+        String(n.tag || 'ANNOUNCEMENT').trim(),
+        String(n.tagClass || 'ok').trim(),
+        String(n.thumbnail || '').trim(),
+        String(n.link || '').trim(),
+        String(n.details || '').trim(),
+        String(n.date || '').trim(),
+        n.isOfficial ? 1 : 0,
+        Number(n.sortOrder || 0),
+        Date.now()
+      ]);
+      return { ok: true, id };
+    },
+    async deleteNews(id) {
+      await db.exec('DELETE FROM news_items WHERE id = ?', [id]);
+      return { ok: true };
+    },
+    async resetNews() {
+      await db.exec('DELETE FROM news_items', []).catch(() => {});
+      return this.getNews();
     },
   };
 }

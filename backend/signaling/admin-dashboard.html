@@ -644,6 +644,10 @@
         <span>🎮 Quick Play Servers</span>
         <span class="tab-badge" id="badge-servers">0</span>
       </button>
+      <button class="tab-btn" data-tab="tab-news">
+        <span>📰 News &amp; Announcements</span>
+        <span class="tab-badge" id="badge-news">0</span>
+      </button>
     </div>
 
     <!-- Tab 1: Live Activity Stream -->
@@ -816,7 +820,93 @@
         </div>
       </div>
     </div>
+
+    <!-- Tab 6: News & Announcements Management -->
+    <div class="tab-pane" id="tab-news">
+      <div class="dashboard-section">
+        <div class="section-header">
+          <div class="section-title">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            News &amp; Launcher Announcements Hub
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button class="btn-action primary" id="btn-add-news">
+              <span>+ Add Announcement</span>
+            </button>
+            <button class="btn-action" id="btn-reset-news" title="Reset to standard defaults">
+              <span>Reset Defaults</span>
+            </button>
+            <button class="btn-action" id="btn-refresh-news">Refresh</button>
+          </div>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          Announcements published here appear live on the Speedy Launcher Home screen worldwide under <strong>News &amp; Updates</strong>.
+        </p>
+        <div style="overflow-x: auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">Thumb</th>
+                <th>Title</th>
+                <th>Category Tag</th>
+                <th>Date</th>
+                <th>Link</th>
+                <th style="width: 170px; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="news-tbody">
+              <tr><td colspan="6" class="table-empty">Loading announcements...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   </main>
+
+  <!-- News Edit/Add Modal -->
+  <div id="news-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); backdrop-filter:blur(6px); z-index:999; align-items:center; justify-content:center;">
+    <div class="modal-box" style="width:520px; max-width:92vw;">
+      <div class="modal-header">
+        <div style="font-weight:700; font-size:15px;" id="news-modal-title">Add Announcement</div>
+        <button class="btn-action" id="news-modal-close">&times;</button>
+      </div>
+      <div class="modal-body" style="display:flex; flex-direction:column; gap:12px;">
+        <div id="news-form-error" style="display:none; padding:8px 12px; background:rgba(239,68,68,0.15); border:1px solid var(--danger); border-radius:6px; color:#fca5a5; font-size:12px;"></div>
+        <input type="hidden" id="news-edit-id" value="">
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Title</label>
+          <input type="text" id="news-input-title" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="e.g. Winter Client Update Released">
+        </div>
+        <div style="display:flex; gap:12px;">
+          <div style="flex:1;">
+            <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Tag Label</label>
+            <input type="text" id="news-input-tag" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="ANNOUNCEMENT, UPDATE, EVENT">
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Date</label>
+            <input type="text" id="news-input-date" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="Nov 2026">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Thumbnail URL</label>
+          <input type="text" id="news-input-thumb" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="https://launchercontent.mojang.com/... or image URL">
+          <div id="news-thumb-preview" style="width:100%; height:80px; margin-top:6px; border-radius:8px; background-size:cover; background-position:center; background-color:#161922; border:1px solid rgba(255,255,255,0.1);"></div>
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">External Link URL</label>
+          <input type="text" id="news-input-link" class="input-filter" style="width:100%; box-sizing:border-box; margin-top:4px;" placeholder="https://...">
+        </div>
+        <div>
+          <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Details / Description</label>
+          <textarea id="news-input-details" class="input-filter" style="width:100%; height:70px; box-sizing:border-box; margin-top:4px; resize:vertical;" placeholder="Optional announcement details..."></textarea>
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+          <button class="btn-action" id="news-modal-cancel">Cancel</button>
+          <button class="btn-action primary" id="news-modal-save">Save Announcement</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <!-- Stack Trace Modal -->
   <div id="stack-modal">
@@ -962,6 +1052,29 @@
 
     let cachedServers = [];
 
+    // News & Announcements elements
+    const newsTbody = document.getElementById('news-tbody');
+    const badgeNews = document.getElementById('badge-news');
+    const btnAddNews = document.getElementById('btn-add-news');
+    const btnResetNews = document.getElementById('btn-reset-news');
+    const btnRefreshNews = document.getElementById('btn-refresh-news');
+    const newsModal = document.getElementById('news-modal');
+    const newsModalTitle = document.getElementById('news-modal-title');
+    const newsModalClose = document.getElementById('news-modal-close');
+    const newsModalCancel = document.getElementById('news-modal-cancel');
+    const newsModalSave = document.getElementById('news-modal-save');
+    const newsFormError = document.getElementById('news-form-error');
+    const newsEditId = document.getElementById('news-edit-id');
+    const newsInputTitle = document.getElementById('news-input-title');
+    const newsInputTag = document.getElementById('news-input-tag');
+    const newsInputDate = document.getElementById('news-input-date');
+    const newsInputThumb = document.getElementById('news-input-thumb');
+    const newsThumbPreview = document.getElementById('news-thumb-preview');
+    const newsInputLink = document.getElementById('news-input-link');
+    const newsInputDetails = document.getElementById('news-input-details');
+
+    let cachedNews = [];
+
     // Modal elements
     const stackModal = document.getElementById('stack-modal');
     const modalTitle = document.getElementById('modal-title');
@@ -1053,6 +1166,7 @@
       loadErrors();
       loadDownloads();
       loadServers();
+      loadNews();
     });
 
     // Tab Switching
@@ -1066,6 +1180,7 @@
         if (targetId === 'tab-errors') loadErrors();
         if (targetId === 'tab-downloads') loadDownloads();
         if (targetId === 'tab-servers') loadServers();
+        if (targetId === 'tab-news') loadNews();
       });
     });
 
@@ -1087,6 +1202,7 @@
       startStream();
       loadErrors();
       loadServers();
+      loadNews();
       setInterval(fetchMetrics, 12000); // 12s metrics refresh
     }
 
@@ -1525,6 +1641,183 @@
       }
     });
 
+    // News & Announcements Management
+    async function loadNews() {
+      try {
+        const res = await fetch('/api/admin/news', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.status === 401) {
+          localStorage.removeItem('speedy_admin_token');
+          location.reload();
+          return;
+        }
+        const data = await res.json();
+        cachedNews = Array.isArray(data?.news) ? data.news : [];
+        badgeNews.innerText = cachedNews.length;
+        renderNewsTable(cachedNews);
+      } catch {
+        newsTbody.innerHTML = '<tr><td colspan="6" class="table-empty" style="color: var(--danger);">Failed to load announcements.</td></tr>';
+      }
+    }
+
+    function renderNewsTable(items) {
+      if (!items || items.length === 0) {
+        newsTbody.innerHTML = '<tr><td colspan="6" class="table-empty">No announcements published yet. Click "+ Add Announcement" or "Reset Defaults".</td></tr>';
+        return;
+      }
+      newsTbody.innerHTML = items.map((n, idx) => {
+        const thumb = n.imageUrl || 'https://launchercontent.mojang.com/v1/news/news-bg-default.jpg';
+        const tag = n.tag ? `<span class="badge" style="background:rgba(255,255,255,0.06); font-size:10px;">${escapeHtml(n.tag)}</span>` : '<span style="color:var(--text-muted); font-size:11px;">—</span>';
+        const link = n.url ? `<a href="${escapeHtml(n.url)}" target="_blank" style="color:#93c5fd; font-size:12px; text-decoration:none;">Open Link ↗</a>` : '<span style="color:var(--text-muted); font-size:11px;">None</span>';
+
+        return `
+          <tr>
+            <td>
+              <div style="width: 50px; height: 32px; border-radius: 4px; background-image: url('${escapeHtml(thumb)}'); background-size: cover; background-position: center; border: 1px solid var(--card-border);"></div>
+            </td>
+            <td>
+              <div style="font-weight: 700; color: #fff; max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(n.title)}</div>
+              ${n.details ? `<div style="font-size: 11px; color: var(--text-muted); max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(n.details)}</div>` : ''}
+            </td>
+            <td>${tag}</td>
+            <td style="color: var(--text-muted); font-size: 11px; white-space: nowrap;">${escapeHtml(n.date || '—')}</td>
+            <td>${link}</td>
+            <td style="text-align: right;">
+              <div style="display: inline-flex; gap: 6px; align-items: center;">
+                <button class="btn-action" style="padding: 4px 10px; font-size: 11px;" onclick="editNews('${escapeHtml(n.id)}')">Edit</button>
+                <button class="btn-action danger" style="padding: 4px 8px; font-size: 11px;" title="Delete" onclick="deleteNews('${escapeHtml(n.id)}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.openNewsModal = function(item = null) {
+      newsFormError.style.display = 'none';
+      if (item) {
+        newsModalTitle.innerText = 'Edit Announcement';
+        newsEditId.value = item.id || '';
+        newsInputTitle.value = item.title || '';
+        newsInputTag.value = item.tag || '';
+        newsInputDate.value = item.date || '';
+        newsInputThumb.value = item.imageUrl || '';
+        newsInputLink.value = item.url || '';
+        newsInputDetails.value = item.details || '';
+      } else {
+        newsModalTitle.innerText = 'Add Announcement';
+        newsEditId.value = '';
+        newsInputTitle.value = '';
+        newsInputTag.value = 'ANNOUNCEMENT';
+        newsInputDate.value = new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        newsInputThumb.value = '';
+        newsInputLink.value = '';
+        newsInputDetails.value = '';
+      }
+      updateNewsThumbPreview();
+      newsModal.style.display = 'flex';
+    };
+
+    window.closeNewsModal = function() {
+      newsModal.style.display = 'none';
+    };
+
+    function updateNewsThumbPreview() {
+      const url = newsInputThumb.value.trim();
+      newsThumbPreview.style.backgroundImage = url ? `url('${url}')` : 'none';
+    }
+
+    newsInputThumb.addEventListener('input', updateNewsThumbPreview);
+
+    window.editNews = function(id) {
+      const n = cachedNews.find(x => x.id === id);
+      if (n) openNewsModal(n);
+    };
+
+    window.deleteNews = async function(id) {
+      const n = cachedNews.find(x => x.id === id);
+      const title = n ? n.title : id;
+      if (!confirm(`Delete announcement "${title}"?`)) return;
+      try {
+        const res = await fetch(`/api/admin/news?id=${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          loadNews();
+        } else {
+          alert('Failed to delete announcement.');
+        }
+      } catch {
+        alert('Network error deleting announcement.');
+      }
+    };
+
+    btnAddNews.addEventListener('click', () => openNewsModal());
+    newsModalClose.addEventListener('click', closeNewsModal);
+    newsModalCancel.addEventListener('click', closeNewsModal);
+    btnRefreshNews.addEventListener('click', loadNews);
+
+    btnResetNews.addEventListener('click', async () => {
+      if (!confirm('Reset announcements to default?')) return;
+      try {
+        const res = await fetch('/api/admin/news', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ action: 'reset' })
+        });
+        if (res.ok) {
+          loadNews();
+        }
+      } catch {
+        alert('Reset failed.');
+      }
+    });
+
+    newsModalSave.addEventListener('click', async (e) => {
+      e.preventDefault();
+      newsFormError.style.display = 'none';
+      const existingId = newsEditId.value.trim();
+      const title = newsInputTitle.value.trim();
+      if (!title) {
+        newsFormError.innerText = 'Title is required.';
+        newsFormError.style.display = 'block';
+        return;
+      }
+      const tag = newsInputTag.value.trim() || 'UPDATE';
+      const date = newsInputDate.value.trim() || 'Recent';
+      const imageUrl = newsInputThumb.value.trim();
+      const url = newsInputLink.value.trim();
+      const details = newsInputDetails.value.trim();
+      const id = existingId || `news-${Date.now()}`;
+
+      try {
+        const res = await fetch('/api/admin/news', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ item: { id, title, tag, date, imageUrl, url, details } })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeNewsModal();
+          loadNews();
+        } else {
+          newsFormError.innerText = data.error || 'Failed to save announcement';
+          newsFormError.style.display = 'block';
+        }
+      } catch {
+        newsFormError.innerText = 'Network error saving announcement';
+        newsFormError.style.display = 'block';
+      }
+    });
+
     // SSE Stream
     function startStream() {
       if (evtSource) evtSource.close();
@@ -1614,6 +1907,11 @@
       evtSource.addEventListener('servers_updated', () => {
         appendLog(Date.now(), 'info', 'SERVERS', `Quick Play servers list was updated.`);
         loadServers();
+      });
+
+      evtSource.addEventListener('news_updated', () => {
+        appendLog(Date.now(), 'info', 'NEWS', `News announcements were updated.`);
+        loadNews();
       });
     }
 
