@@ -66,11 +66,95 @@ const PRESENCE_TTL_MS = 90_000;
 // Server-side cache so the mod endpoint never hammers the DB on every request.
 let playerListCache = { ts: 0, list: /** @type {string[]} */ ([]) };
 const PLAYER_CACHE_TTL_MS = 60_000; // 1 minute
+const ACTIVE_PLAYER_TTL_MS = 10 * 60_000; // 10 minutes
+/** @type {Map<string, { name: string, ts: number }>} */
+const activeSpeedyPlayers = new Map();
+
+function recordActiveSpeedyPlayer(rawName) {
+  if (!rawName || typeof rawName !== 'string') return;
+  const clean = rawName.replace(/[^a-zA-Z0-9_]/g, '').trim();
+  if (clean.length < 2 || clean.length > 24) return;
+  const key = clean.toLowerCase();
+  const isNew = !activeSpeedyPlayers.has(key);
+  activeSpeedyPlayers.set(key, { name: clean, ts: Date.now() });
+  if (isNew) {
+    // Bust cache so other players see the newly joined player immediately
+    playerListCache.ts = 0;
+  }
+}
+
+// ---------------------------------------------------------------- remote cosmetics sync cache
+const COSMETICS_TTL_MS = 15 * 60_000; // 15 minutes
+/** @type {Map<string, { cape: string|null, slots: Record<string, string>, transforms: Record<string, any>, ts: number }>} */
+const playerCosmetics = new Map();
+
+function sanitizeCosmeticProfile(body) {
+  const cape = typeof body?.cape === 'string' && body.cape.length <= 64 ? body.cape : null;
+  const slots = {};
+  if (body?.slots && typeof body.slots === 'object') {
+    for (const [k, v] of Object.entries(body.slots)) {
+      if (typeof k === 'string' && typeof v === 'string' && k.length <= 32 && v.length <= 64) {
+        slots[k] = v;
+      }
+    }
+  }
+  const transforms = {};
+  if (body?.transforms && typeof body.transforms === 'object') {
+    for (const [id, tr] of Object.entries(body.transforms)) {
+      if (typeof id === 'string' && id.length <= 64 && tr && typeof tr === 'object') {
+        transforms[id] = {
+          offsetX: Number(tr.offsetX) || 0,
+          offsetY: Number(tr.offsetY) || 0,
+          offsetZ: Number(tr.offsetZ) || 0,
+          rotX: Number(tr.rotX) || 0,
+          rotY: Number(tr.rotY) || 0,
+          rotZ: Number(tr.rotZ) || 0,
+          scale: Number.isFinite(Number(tr.scale)) ? Number(tr.scale) : 1,
+        };
+      }
+    }
+  }
+  return { cape, slots, transforms, ts: Date.now() };
+}
+
+function getActiveCosmeticsMap() {
+  const now = Date.now();
+  const out = {};
+  for (const [key, entry] of playerCosmetics.entries()) {
+    if (now - entry.ts > COSMETICS_TTL_MS) {
+      playerCosmetics.delete(key);
+    } else {
+      out[key] = { cape: entry.cape, slots: entry.slots, transforms: entry.transforms };
+    }
+  }
+  return out;
+}
 
 async function getSpeedyPlayerList() {
   if (Date.now() - playerListCache.ts < PLAYER_CACHE_TTL_MS) return playerListCache.list;
   try {
-    const list = await store.listMinecraftUsernames();
+    const dbList = await store.listMinecraftUsernames();
+    const merged = new Map();
+    for (const name of dbList) {
+      if (name) merged.set(String(name).toLowerCase(), String(name));
+    }
+    const now = Date.now();
+    for (const [key, entry] of activeSpeedyPlayers.entries()) {
+      if (now - entry.ts > ACTIVE_PLAYER_TTL_MS) {
+        activeSpeedyPlayers.delete(key);
+      } else if (!merged.has(key)) {
+        merged.set(key, entry.name);
+      }
+    }
+    if (typeof sessions !== 'undefined') {
+      for (const s of sessions.values()) {
+        if (s?.user?.minecraftUsername) {
+          const n = String(s.user.minecraftUsername);
+          if (!merged.has(n.toLowerCase())) merged.set(n.toLowerCase(), n);
+        }
+      }
+    }
+    const list = [...merged.values()];
     playerListCache = { ts: Date.now(), list };
     return list;
   } catch (e) {
@@ -630,19 +714,84 @@ const server = http.createServer((req, res) => {
   }
 
   // Public Speedy player registry — used by in-game mod for nametag badges.
-  // No auth required; returns only Minecraft usernames of registered players.
-  if (url === '/api/speedy-players') {
+  // Accepts optional ?player=<mcName> on GET or { player } on POST to register active in-game players.
+  if (url.startsWith('/api/speedy-players')) {
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', (c) => { if (body.length < 4096) body += c; });
+      req.on('end', () => {
+        try {
+          const parsed = JSON.parse(body || '{}');
+          if (parsed?.player) recordActiveSpeedyPlayer(parsed.player);
+        } catch {}
+        getSpeedyPlayerList().then((list) => {
+          res.writeHead(200, {
+            'content-type': 'application/json',
+            'access-control-allow-origin': '*',
+            'cache-control': 'no-cache',
+          });
+          res.end(JSON.stringify({ ok: true, players: list, ts: Date.now() }));
+        }).catch(() => {
+          res.writeHead(500, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+          res.end(JSON.stringify({ players: [], error: 'server error' }));
+        });
+      });
+      return;
+    }
+
+    try {
+      const parsedUrl = new URL(req.url || '/', 'http://localhost');
+      const playerParam = parsedUrl.searchParams.get('player');
+      if (playerParam) recordActiveSpeedyPlayer(playerParam);
+    } catch {}
+
     getSpeedyPlayerList().then((list) => {
       res.writeHead(200, {
         'content-type': 'application/json',
         'access-control-allow-origin': '*',
-        'cache-control': 'public, max-age=60',
+        'cache-control': 'public, max-age=30',
       });
       res.end(JSON.stringify({ players: list, ts: Date.now() }));
     }).catch(() => {
       res.writeHead(500, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
       res.end(JSON.stringify({ players: [], error: 'server error' }));
     });
+    return;
+  }
+
+  // Public Speedy cosmetics sync — lets Speedy players see each other's capes and 3D cosmetics.
+  if (url === '/api/cosmetics/sync' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { if (body.length < 32768) body += c; });
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(body || '{}');
+        const rawName = String(parsed?.player || '').replace(/[^a-zA-Z0-9_]/g, '').trim();
+        if (rawName.length >= 2 && rawName.length <= 24) {
+          recordActiveSpeedyPlayer(rawName);
+          playerCosmetics.set(rawName.toLowerCase(), sanitizeCosmeticProfile(parsed));
+        }
+        res.writeHead(200, {
+          'content-type': 'application/json',
+          'access-control-allow-origin': '*',
+          'cache-control': 'no-cache',
+        });
+        res.end(JSON.stringify({ ok: true }));
+      } catch {
+        res.writeHead(400, { 'content-type': 'application/json', 'access-control-allow-origin': '*' });
+        res.end(JSON.stringify({ ok: false, error: 'invalid json' }));
+      }
+    });
+    return;
+  }
+
+  if (url === '/api/cosmetics' && req.method === 'GET') {
+    res.writeHead(200, {
+      'content-type': 'application/json',
+      'access-control-allow-origin': '*',
+      'cache-control': 'public, max-age=15',
+    });
+    res.end(JSON.stringify({ cosmetics: getActiveCosmeticsMap(), ts: Date.now() }));
     return;
   }
 
