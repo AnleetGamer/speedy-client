@@ -141,3 +141,13 @@ CREATE TABLE IF NOT EXISTS featured_servers (
 );
 CREATE INDEX IF NOT EXISTS idx_featured_servers_sort ON featured_servers(sort_order, created);
 
+-- All Speedy Client players (registered, offline, Microsoft, and in-game)
+CREATE TABLE IF NOT EXISTS speedy_players (
+  username_lower TEXT PRIMARY KEY,
+  username TEXT NOT NULL,
+  source TEXT NOT NULL DEFAULT 'launcher',
+  updated_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_speedy_players_updated ON speedy_players(updated_at);
+
+

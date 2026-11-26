@@ -70,16 +70,19 @@ const ACTIVE_PLAYER_TTL_MS = 10 * 60_000; // 10 minutes
 /** @type {Map<string, { name: string, ts: number }>} */
 const activeSpeedyPlayers = new Map();
 
-function recordActiveSpeedyPlayer(rawName) {
+function recordActiveSpeedyPlayer(rawName, source = 'ingame') {
   if (!rawName || typeof rawName !== 'string') return;
   const clean = rawName.replace(/[^a-zA-Z0-9_]/g, '').trim();
   if (clean.length < 2 || clean.length > 24) return;
   const key = clean.toLowerCase();
   const isNew = !activeSpeedyPlayers.has(key);
   activeSpeedyPlayers.set(key, { name: clean, ts: Date.now() });
-  if (isNew) {
-    // Bust cache so other players see the newly joined player immediately
+  if (isNew || source !== 'ingame') {
+    // Bust cache so other players see the newly joined/registered player immediately
     playerListCache.ts = 0;
+    if (store && typeof store.recordSpeedyPlayer === 'function') {
+      store.recordSpeedyPlayer(clean, source).catch(() => {});
+    }
   }
 }
 
@@ -714,15 +717,21 @@ const server = http.createServer((req, res) => {
   }
 
   // Public Speedy player registry — used by in-game mod for nametag badges.
-  // Accepts optional ?player=<mcName> on GET or { player } on POST to register active in-game players.
+  // Accepts optional ?player=<mcName> on GET or { player, players, source } on POST to register & persist in TursoDB.
   if (url.startsWith('/api/speedy-players')) {
     if (req.method === 'POST') {
       let body = '';
-      req.on('data', (c) => { if (body.length < 4096) body += c; });
+      req.on('data', (c) => { if (body.length < 16384) body += c; });
       req.on('end', () => {
         try {
           const parsed = JSON.parse(body || '{}');
-          if (parsed?.player) recordActiveSpeedyPlayer(parsed.player);
+          const src = typeof parsed?.source === 'string' ? parsed.source : 'launcher';
+          if (parsed?.player) recordActiveSpeedyPlayer(parsed.player, src);
+          if (Array.isArray(parsed?.players)) {
+            for (const p of parsed.players) {
+              if (typeof p === 'string') recordActiveSpeedyPlayer(p, src);
+            }
+          }
         } catch {}
         getSpeedyPlayerList().then((list) => {
           res.writeHead(200, {

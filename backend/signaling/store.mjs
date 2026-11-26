@@ -202,10 +202,25 @@ export function createMemoryStore() {
       const u = users.get(userId);
       if (u) u.minecraftUsername = name;
     },
+    async recordSpeedyPlayer(username, source = 'launcher') {
+      if (!username || typeof username !== 'string') return;
+      const clean = username.replace(/[^a-zA-Z0-9_]/g, '').trim();
+      if (clean.length < 2 || clean.length > 24) return;
+      if (!this._speedyPlayers) this._speedyPlayers = new Map();
+      this._speedyPlayers.set(clean.toLowerCase(), { username: clean, source, updated_at: Date.now() });
+    },
     async listMinecraftUsernames() {
-      return [...users.values()]
-        .map(u => u.minecraftUsername || u.username)
-        .filter(Boolean);
+      const merged = new Map();
+      for (const u of users.values()) {
+        const n = u.minecraftUsername || u.username;
+        if (n) merged.set(String(n).toLowerCase(), String(n));
+      }
+      if (this._speedyPlayers) {
+        for (const [k, v] of this._speedyPlayers.entries()) {
+          if (v?.username && !merged.has(k)) merged.set(k, v.username);
+        }
+      }
+      return [...merged.values()];
     },
     // ---- Telemetry & Admin Store Methods ----
     async recordTelemetryBatch({ events = [], errors = [], downloads = [] }) {
@@ -543,12 +558,35 @@ export function createTursoStore({ url, token }) {
     async setMinecraftUsername(userId, name) {
       await db.exec('UPDATE users SET minecraft_username = ? WHERE id = ?', [name, userId]);
     },
+    async recordSpeedyPlayer(username, source = 'launcher') {
+      if (!username || typeof username !== 'string') return;
+      const clean = username.replace(/[^a-zA-Z0-9_]/g, '').trim();
+      if (clean.length < 2 || clean.length > 24) return;
+      await db.exec(
+        'INSERT INTO speedy_players (username_lower, username, source, updated_at) VALUES (?,?,?,?) ON CONFLICT(username_lower) DO UPDATE SET username = excluded.username, source = excluded.source, updated_at = excluded.updated_at',
+        [clean.toLowerCase(), clean, String(source || 'launcher').slice(0, 32), Date.now()]
+      );
+    },
     async listMinecraftUsernames() {
-      const r = await db.exec(
+      const merged = new Map();
+      const r1 = await db.exec(
         'SELECT COALESCE(minecraft_username, username) AS name FROM users WHERE minecraft_username IS NOT NULL OR username IS NOT NULL',
         []
       );
-      return rowsToObjects(r).map(row => row.name).filter(Boolean);
+      for (const row of rowsToObjects(r1)) {
+        if (row.name) merged.set(String(row.name).toLowerCase(), String(row.name));
+      }
+      try {
+        const r2 = await db.exec('SELECT username AS name FROM speedy_players WHERE username IS NOT NULL', []);
+        for (const row of rowsToObjects(r2)) {
+          if (row.name && !merged.has(String(row.name).toLowerCase())) {
+            merged.set(String(row.name).toLowerCase(), String(row.name));
+          }
+        }
+      } catch {
+        // Table may not exist yet on first boot before schema migration
+      }
+      return [...merged.values()];
     },
     // ---- Telemetry & Admin Store Methods ----
     async recordTelemetryBatch({ events = [], errors = [], downloads = [] }) {
