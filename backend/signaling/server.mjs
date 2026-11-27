@@ -57,6 +57,7 @@ import { createRateLimiter } from '../shared/protocol/schema.mjs';
 import { defaultPrivacy, filterPresence } from '../shared/presence/logic.mjs';
 import { checkImpersonation } from '../shared/safety/impersonation.mjs';
 import { handleAdminAndTelemetry, broadcastAdminEvent } from './admin-routes.mjs';
+import { handleAiRoutes } from './ai.mjs';
 
 const PORT = Number(process.env.PORT || 8787);
 const PREVIEW_DIR = process.env.ANLEET_PREVIEW_DIR || path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'tools', 'preview');
@@ -713,6 +714,10 @@ const server = http.createServer((req, res) => {
   }
 
   if (handleAdminAndTelemetry(req, res, { store, sessions, SECRET })) {
+    return;
+  }
+
+  if (handleAiRoutes(req, res, url)) {
     return;
   }
 
